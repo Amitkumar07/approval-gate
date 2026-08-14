@@ -65,86 +65,90 @@ _PAGE = """<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>approval-gate &middot; review inbox</title>
+<title>approval-gate &middot; control</title>
 <style>
   :root {
-    --bg: #f4f5f9;
+    --bg: #f1f1ee;
     --surface: #ffffff;
-    --surface-sunken: #eceef4;
-    --border: #dcdfe9;
-    --text: #1b1e2b;
-    --text-muted: #5b5f75;
-    --text-faint: #8a8ea3;
-    --accent: #4338ca;
-    --accent-text: #ffffff;
-    --accent-soft: #eeecfd;
-    --focus-ring: #4338ca;
+    --surface-sunken: #e8e8e4;
+    --border: #dbdbd5;
+    --border-strong: #c6c6be;
+    --text: #17181a;
+    --text-muted: #5c5d5f;
+    --text-faint: #93938e;
+    --accent: #ff4d1c;
+    --accent-text: #17181a;
+    --accent-dim: #ffe4d8;
+    --focus-ring: #ff4d1c;
 
-    --risk-low-bg: #e4f1e6;
-    --risk-low-fg: #2f6d3f;
-    --risk-medium-bg: #fbeed9;
-    --risk-medium-fg: #93591a;
-    --risk-high-bg: #fbe2df;
-    --risk-high-fg: #a13327;
+    --risk-low-fg: #3d7a4f;
+    --risk-low-bg: #e2eee3;
+    --risk-medium-fg: #9a6a11;
+    --risk-medium-bg: #f4e8d3;
+    --risk-high-fg: #b0392b;
+    --risk-high-bg: #f5ddd7;
 
-    --danger: #a13327;
-    --danger-soft: #fbe2df;
+    --danger: #b0392b;
+    --danger-bg: #f5ddd7;
     --danger-text: #ffffff;
 
+    --font-display: -apple-system, "SF Pro Display", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
     --font-ui: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     --font-mono: ui-monospace, "SF Mono", "Cascadia Code", "Roboto Mono", Menlo, Consolas, monospace;
   }
 
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --bg: #101220;
-      --surface: #171a2b;
-      --surface-sunken: #1e2136;
-      --border: #2c2f47;
-      --text: #e7e8f3;
-      --text-muted: #a5a8c0;
-      --text-faint: #6d7091;
-      --accent: #8b80f9;
-      --accent-text: #14162a;
-      --accent-soft: #262a48;
-      --focus-ring: #8b80f9;
+      --bg: #0c0d0e;
+      --surface: #17181a;
+      --surface-sunken: #1e1f22;
+      --border: #2b2c2f;
+      --border-strong: #3c3d40;
+      --text: #eeeeec;
+      --text-muted: #a3a3a0;
+      --text-faint: #6d6e6c;
+      --accent: #ff6a3d;
+      --accent-text: #0c0d0e;
+      --accent-dim: #3a1f14;
+      --focus-ring: #ff6a3d;
 
-      --risk-low-bg: #1c2e21;
-      --risk-low-fg: #7fd499;
-      --risk-medium-bg: #332510;
-      --risk-medium-fg: #eab35c;
-      --risk-high-bg: #351f1c;
-      --risk-high-fg: #f0897a;
+      --risk-low-fg: #79c78d;
+      --risk-low-bg: #16261b;
+      --risk-medium-fg: #e0ac4f;
+      --risk-medium-bg: #2c2210;
+      --risk-high-fg: #ea8a78;
+      --risk-high-bg: #2e1a16;
 
-      --danger: #f0897a;
-      --danger-soft: #351f1c;
-      --danger-text: #1c0f0d;
+      --danger: #ea8a78;
+      --danger-bg: #2e1a16;
+      --danger-text: #17100e;
     }
   }
 
   :root[data-theme="dark"] {
-    --bg: #101220;
-    --surface: #171a2b;
-    --surface-sunken: #1e2136;
-    --border: #2c2f47;
-    --text: #e7e8f3;
-    --text-muted: #a5a8c0;
-    --text-faint: #6d7091;
-    --accent: #8b80f9;
-    --accent-text: #14162a;
-    --accent-soft: #262a48;
-    --focus-ring: #8b80f9;
+    --bg: #0c0d0e;
+    --surface: #17181a;
+    --surface-sunken: #1e1f22;
+    --border: #2b2c2f;
+    --border-strong: #3c3d40;
+    --text: #eeeeec;
+    --text-muted: #a3a3a0;
+    --text-faint: #6d6e6c;
+    --accent: #ff6a3d;
+    --accent-text: #0c0d0e;
+    --accent-dim: #3a1f14;
+    --focus-ring: #ff6a3d;
 
-    --risk-low-bg: #1c2e21;
-    --risk-low-fg: #7fd499;
-    --risk-medium-bg: #332510;
-    --risk-medium-fg: #eab35c;
-    --risk-high-bg: #351f1c;
-    --risk-high-fg: #f0897a;
+    --risk-low-fg: #79c78d;
+    --risk-low-bg: #16261b;
+    --risk-medium-fg: #e0ac4f;
+    --risk-medium-bg: #2c2210;
+    --risk-high-fg: #ea8a78;
+    --risk-high-bg: #2e1a16;
 
-    --danger: #f0897a;
-    --danger-soft: #351f1c;
-    --danger-text: #1c0f0d;
+    --danger: #ea8a78;
+    --danger-bg: #2e1a16;
+    --danger-text: #17100e;
   }
 
   * { box-sizing: border-box; }
@@ -154,131 +158,198 @@ _PAGE = """<!doctype html>
     background: var(--bg);
     color: var(--text);
     font-family: var(--font-ui);
-    font-size: 15px;
+    font-size: 14.5px;
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
   }
 
   .shell {
-    max-width: 760px;
+    max-width: 720px;
     margin: 0 auto;
-    padding: 2.5rem 1.5rem 5rem;
+    padding: 0 1.25rem 6rem;
   }
 
-  .masthead {
+  /* ---- status hero: the page's thesis is "something is paused, waiting on you" ---- */
+
+  .hero {
+    padding: 2.25rem 0 1.75rem;
     display: flex;
-    align-items: baseline;
+    align-items: flex-start;
     justify-content: space-between;
     gap: 1rem;
-    margin-bottom: 0.35rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 1.5rem;
   }
 
-  .masthead h1 {
-    font-size: 1.05rem;
-    font-weight: 650;
-    letter-spacing: -0.01em;
-    margin: 0;
+  .hero-left {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+  }
+
+  .live-row {
     display: flex;
     align-items: center;
     gap: 0.5rem;
   }
 
-  .masthead h1 .mark {
-    display: inline-block;
+  .live-dot {
+    position: relative;
     width: 8px;
     height: 8px;
     border-radius: 50%;
+    background: var(--text-faint);
+    flex: none;
+  }
+
+  .live-dot.active {
     background: var(--accent);
   }
 
-  .count {
-    font-family: var(--font-mono);
-    font-size: 0.8rem;
-    color: var(--text-faint);
-    font-variant-numeric: tabular-nums;
+  .live-dot.active::after {
+    content: "";
+    position: absolute;
+    inset: -5px;
+    border-radius: 50%;
+    border: 1px solid var(--accent);
+    animation: pulse 2s ease-out infinite;
   }
 
-  .subhead {
+  @keyframes pulse {
+    0% { transform: scale(0.6); opacity: 0.7; }
+    100% { transform: scale(1.9); opacity: 0; }
+  }
+
+  .live-label {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+  }
+
+  .live-label.active { color: var(--accent); }
+
+  .hero-count {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 2.6rem;
+    line-height: 1;
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+    text-wrap: balance;
+  }
+
+  .hero-count .unit {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-left: 0.5rem;
+    letter-spacing: -0.01em;
+  }
+
+  .hero-sub {
     color: var(--text-muted);
     font-size: 0.85rem;
-    margin: 0 0 2rem;
+    max-width: 30ch;
+  }
+
+  .hero-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.6rem;
+    flex: none;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--text-faint);
+  }
+
+  .brand .glyph {
+    color: var(--accent);
+    font-weight: 700;
   }
 
   .reviewer-field {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 2rem;
-    padding: 0.6rem 0.85rem;
+    gap: 0.4rem;
+    padding: 0.4rem 0.7rem;
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: 8px;
   }
 
   .reviewer-field label {
-    font-size: 0.8rem;
-    color: var(--text-muted);
+    font-size: 0.7rem;
+    color: var(--text-faint);
     white-space: nowrap;
   }
 
   .reviewer-field input {
-    flex: 1;
+    width: 8rem;
     border: none;
     background: transparent;
     color: var(--text);
-    font-family: var(--font-ui);
-    font-size: 0.85rem;
-    padding: 0.15rem 0;
-    min-width: 0;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    padding: 0.1rem 0;
+    text-align: right;
   }
 
-  .reviewer-field input:focus {
-    outline: none;
-  }
+  .reviewer-field input:focus { outline: none; }
+
+  /* ---- queue ---- */
 
   .list {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 0.85rem;
   }
 
   .empty {
     text-align: center;
-    padding: 4rem 1rem;
+    padding: 4.5rem 1rem 3rem;
     color: var(--text-faint);
   }
 
   .empty .glyph {
     font-family: var(--font-mono);
-    font-size: 1.6rem;
-    color: var(--text-faint);
-    margin-bottom: 0.75rem;
-    opacity: 0.6;
+    font-size: 1.8rem;
+    color: var(--risk-low-fg);
+    margin-bottom: 0.9rem;
   }
 
   .empty .title {
-    color: var(--text-muted);
-    font-size: 0.95rem;
-    font-weight: 600;
-    margin-bottom: 0.25rem;
+    font-family: var(--font-display);
+    color: var(--text);
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin-bottom: 0.3rem;
+    letter-spacing: -0.01em;
   }
 
   .empty .hint {
-    font-size: 0.8rem;
+    font-size: 0.82rem;
+    max-width: 32ch;
+    margin: 0 auto;
   }
 
   .card {
     display: flex;
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 14px;
+    border-radius: 10px;
     overflow: hidden;
   }
 
-  .stripe {
-    flex: 0 0 4px;
-  }
-
+  .stripe { flex: 0 0 3px; }
   .stripe.risk-low { background: var(--risk-low-fg); }
   .stripe.risk-medium { background: var(--risk-medium-fg); }
   .stripe.risk-high { background: var(--risk-high-fg); }
@@ -286,7 +357,7 @@ _PAGE = """<!doctype html>
   .card-body {
     flex: 1;
     min-width: 0;
-    padding: 1.1rem 1.25rem 1.25rem;
+    padding: 1rem 1.15rem 1.1rem;
   }
 
   .card-head {
@@ -294,16 +365,14 @@ _PAGE = """<!doctype html>
     align-items: flex-start;
     justify-content: space-between;
     gap: 0.75rem;
-    margin-bottom: 0.9rem;
+    margin-bottom: 0.85rem;
   }
 
-  .card-head .titles {
-    min-width: 0;
-  }
+  .card-head .titles { min-width: 0; }
 
   .action-name {
     font-family: var(--font-mono);
-    font-size: 0.98rem;
+    font-size: 0.94rem;
     font-weight: 600;
     letter-spacing: -0.01em;
     word-break: break-word;
@@ -312,20 +381,21 @@ _PAGE = """<!doctype html>
   .meta-row {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    margin-top: 0.3rem;
+    gap: 0.4rem;
+    margin-top: 0.4rem;
     flex-wrap: wrap;
   }
 
   .badge {
     display: inline-flex;
     align-items: center;
-    font-size: 0.7rem;
-    font-weight: 650;
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
-    padding: 0.18rem 0.55rem;
-    border-radius: 999px;
+    letter-spacing: 0.05em;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
   }
 
   .badge.risk-low { background: var(--risk-low-bg); color: var(--risk-low-fg); }
@@ -334,31 +404,32 @@ _PAGE = """<!doctype html>
 
   .route-tag {
     font-family: var(--font-mono);
-    font-size: 0.72rem;
+    font-size: 0.68rem;
     color: var(--text-muted);
     background: var(--surface-sunken);
-    padding: 0.18rem 0.55rem;
-    border-radius: 999px;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
   }
 
   .waiting {
-    font-size: 0.72rem;
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
     color: var(--text-faint);
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
-    padding-top: 0.15rem;
+    padding-top: 0.2rem;
   }
 
   .fields {
     display: grid;
-    grid-template-columns: minmax(0, 30%) 1fr;
-    gap: 0.5rem 0.75rem;
-    margin-bottom: 0.9rem;
+    grid-template-columns: minmax(0, 28%) 1fr;
+    gap: 0.45rem 0.65rem;
+    margin-bottom: 0.85rem;
   }
 
   .field-key {
     font-family: var(--font-mono);
-    font-size: 0.78rem;
+    font-size: 0.74rem;
     color: var(--text-muted);
     padding-top: 0.5rem;
     word-break: break-word;
@@ -370,12 +441,12 @@ _PAGE = """<!doctype html>
     resize: vertical;
     background: var(--surface-sunken);
     border: 1px solid var(--border);
-    border-radius: 8px;
+    border-radius: 6px;
     color: var(--text);
-    font-family: var(--font-ui);
-    font-size: 0.85rem;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
     line-height: 1.45;
-    padding: 0.45rem 0.6rem;
+    padding: 0.4rem 0.55rem;
   }
 
   .field-value textarea:focus {
@@ -387,59 +458,49 @@ _PAGE = """<!doctype html>
   .findings {
     background: var(--risk-high-bg);
     color: var(--risk-high-fg);
-    border-radius: 10px;
-    padding: 0.65rem 0.8rem;
-    font-size: 0.8rem;
-    margin-bottom: 0.9rem;
+    border-radius: 8px;
+    padding: 0.6rem 0.75rem;
+    font-size: 0.78rem;
+    margin-bottom: 0.85rem;
   }
 
   .findings .findings-title {
     font-weight: 650;
-    margin-bottom: 0.35rem;
+    margin-bottom: 0.3rem;
     display: flex;
     align-items: center;
     gap: 0.4rem;
   }
 
-  .findings ul {
-    margin: 0;
-    padding-left: 1.1rem;
-  }
-
-  .findings li {
-    margin: 0.15rem 0;
-  }
-
-  .findings code {
-    font-family: var(--font-mono);
-    font-size: 0.78rem;
-  }
+  .findings ul { margin: 0; padding-left: 1.1rem; }
+  .findings li { margin: 0.15rem 0; }
+  .findings code { font-family: var(--font-mono); font-size: 0.75rem; }
 
   .actions {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.45rem;
     flex-wrap: wrap;
   }
 
   button {
     font-family: var(--font-ui);
-    font-size: 0.85rem;
+    font-size: 0.82rem;
     font-weight: 600;
-    padding: 0.5rem 0.95rem;
-    border-radius: 8px;
-    border: 1px solid var(--border);
+    padding: 0.45rem 0.85rem;
+    border-radius: 7px;
+    border: 1px solid var(--border-strong);
     background: var(--surface);
     color: var(--text);
     cursor: pointer;
-    transition: filter 0.1s ease, transform 0.05s ease;
+    transition: filter 0.1s ease, transform 0.05s ease, border-color 0.1s ease;
   }
 
   button:hover { filter: brightness(0.97); }
   @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) button:hover { filter: brightness(1.15); }
+    :root:not([data-theme="light"]) button:hover { filter: brightness(1.2); }
   }
-  :root[data-theme="dark"] button:hover { filter: brightness(1.15); }
+  :root[data-theme="dark"] button:hover { filter: brightness(1.2); }
 
   button:active { transform: translateY(1px); }
 
@@ -454,9 +515,7 @@ _PAGE = """<!doctype html>
     color: var(--accent-text);
   }
 
-  button.quiet {
-    background: transparent;
-  }
+  button.quiet { background: transparent; }
 
   button.danger-text {
     background: transparent;
@@ -466,10 +525,10 @@ _PAGE = """<!doctype html>
   }
 
   .reject-panel {
-    margin-top: 0.75rem;
-    padding: 0.75rem;
-    background: var(--danger-soft);
-    border-radius: 10px;
+    margin-top: 0.7rem;
+    padding: 0.7rem;
+    background: var(--danger-bg);
+    border-radius: 8px;
     display: none;
   }
 
@@ -477,7 +536,7 @@ _PAGE = """<!doctype html>
 
   .reject-panel label {
     display: block;
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     font-weight: 650;
     color: var(--danger);
     margin-bottom: 0.4rem;
@@ -487,20 +546,17 @@ _PAGE = """<!doctype html>
     width: 100%;
     box-sizing: border-box;
     border: 1px solid var(--border);
-    border-radius: 8px;
+    border-radius: 6px;
     background: var(--surface);
     color: var(--text);
     font-family: var(--font-ui);
-    font-size: 0.85rem;
-    padding: 0.5rem 0.6rem;
-    margin-bottom: 0.6rem;
+    font-size: 0.82rem;
+    padding: 0.45rem 0.55rem;
+    margin-bottom: 0.55rem;
     resize: vertical;
   }
 
-  .reject-panel .reject-actions {
-    display: flex;
-    gap: 0.5rem;
-  }
+  .reject-panel .reject-actions { display: flex; gap: 0.45rem; }
 
   button.confirm-reject {
     background: var(--danger);
@@ -515,9 +571,10 @@ _PAGE = """<!doctype html>
     transform: translateX(-50%) translateY(8px);
     background: var(--text);
     color: var(--bg);
-    padding: 0.55rem 1rem;
-    border-radius: 8px;
-    font-size: 0.82rem;
+    padding: 0.5rem 0.95rem;
+    border-radius: 7px;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
     font-weight: 600;
     opacity: 0;
     pointer-events: none;
@@ -529,22 +586,38 @@ _PAGE = """<!doctype html>
     transform: translateX(-50%) translateY(0);
   }
 
+  .card-enter {
+    animation: rise 0.25s ease-out;
+  }
+
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
   @media (prefers-reduced-motion: reduce) {
-    * { transition: none !important; }
+    * { transition: none !important; animation: none !important; }
   }
 </style>
 </head>
 <body>
 <div class="shell">
-  <div class="masthead">
-    <h1><span class="mark"></span>approval-gate</h1>
-    <span class="count" id="count"></span>
-  </div>
-  <p class="subhead">Actions waiting on a human decision before they run.</p>
-
-  <div class="reviewer-field">
-    <label for="reviewer">Reviewing as</label>
-    <input id="reviewer" type="text" value="reviewer" autocomplete="off" spellcheck="false">
+  <div class="hero">
+    <div class="hero-left">
+      <div class="live-row">
+        <span class="live-dot" id="live-dot"></span>
+        <span class="live-label" id="live-label">idle</span>
+      </div>
+      <div class="hero-count" id="hero-count">0<span class="unit">pending</span></div>
+      <div class="hero-sub" id="hero-sub">Nothing is waiting on you right now.</div>
+    </div>
+    <div class="hero-right">
+      <div class="brand"><span class="glyph">&#9679;</span>approval-gate</div>
+      <div class="reviewer-field">
+        <label for="reviewer">as</label>
+        <input id="reviewer" type="text" value="reviewer" autocomplete="off" spellcheck="false">
+      </div>
+    </div>
   </div>
 
   <div id="root" class="list"></div>
@@ -580,6 +653,8 @@ function timeAgo(seconds) {
   return h + "h ago";
 }
 
+let knownIds = new Set();
+
 async function refresh() {
   let items;
   try {
@@ -590,18 +665,30 @@ async function refresh() {
   }
 
   const root = document.getElementById("root");
-  const countEl = document.getElementById("count");
-  countEl.textContent = items.length > 0 ? items.length + " pending" : "";
+  const dot = document.getElementById("live-dot");
+  const label = document.getElementById("live-label");
+  const heroCount = document.getElementById("hero-count");
+  const heroSub = document.getElementById("hero-sub");
 
-  if (items.length === 0) {
+  const n = items.length;
+  dot.className = "live-dot" + (n > 0 ? " active" : "");
+  label.className = "live-label" + (n > 0 ? " active" : "");
+  label.textContent = n > 0 ? "paused" : "idle";
+  heroCount.innerHTML = n + '<span class="unit">' + (n === 1 ? "action pending" : "actions pending") + '</span>';
+  heroSub.textContent = n > 0
+    ? "An agent is frozen mid-action, waiting on a decision."
+    : "Nothing is waiting on you right now.";
+
+  if (n === 0) {
     root.className = "list";
     root.innerHTML = "";
     const empty = document.createElement("div");
     empty.className = "empty";
     empty.innerHTML = '<div class="glyph">&#10003;</div>' +
-      '<div class="title">Inbox clear</div>' +
-      '<div class="hint">New actions will appear here the moment they need review.</div>';
+      '<div class="title">Queue clear</div>' +
+      '<div class="hint">New actions land here the instant an agent needs a decision.</div>';
     root.appendChild(empty);
+    knownIds = new Set();
     return;
   }
 
@@ -609,11 +696,15 @@ async function refresh() {
     Array.from(root.querySelectorAll(".reject-panel.open")).map((el) => el.dataset.auditId)
   );
 
+  const nextIds = new Set(items.map((it) => it.audit_id));
   root.className = "list";
   root.innerHTML = "";
   for (const item of items) {
-    root.appendChild(renderCard(item, openIds.has(item.audit_id)));
+    const card = renderCard(item, openIds.has(item.audit_id));
+    if (!knownIds.has(item.audit_id)) card.classList.add("card-enter");
+    root.appendChild(card);
   }
+  knownIds = nextIds;
 }
 
 function renderCard(item, rejectOpen) {
@@ -646,7 +737,7 @@ function renderCard(item, rejectOpen) {
   if (item.route_to) {
     const route = document.createElement("span");
     route.className = "route-tag";
-    route.textContent = "→ " + item.route_to;
+    route.textContent = "-> " + item.route_to;
     metaRow.appendChild(route);
   }
   titles.appendChild(metaRow);
@@ -847,6 +938,7 @@ def _make_handler(backend: WebBackend):
                 self.send_response(404)
                 self.end_headers()
                 return
+
             length = int(self.headers.get("Content-Length", 0))
             body = json.loads(self.rfile.read(length) or b"{}")
             audit_id = body.get("audit_id")
