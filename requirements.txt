@@ -1,3 +1,7 @@
+# approval-gate's core (ApprovalGate, audit log, PII scanning, BlockingBackend)
+# has no required dependencies. Install extras for the pieces you need:
+
+# for LangGraphBackend (used by examples/email_agent_demo.py)
 langgraph>=0.2.0
 langchain-core>=0.3.0
 

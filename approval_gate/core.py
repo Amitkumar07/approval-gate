@@ -2,11 +2,12 @@
 core.py
 -------
 The actual product. Call `gate.request_approval(...)` from inside any
-LangGraph tool/node before doing something risky. Execution pauses
-(via LangGraph's native `interrupt()`) until a human resumes the graph
-with a decision. Every step is written to the audit log.
+agent tool/node before doing something risky. Execution pauses until a
+human resumes with a decision. Every step is written to the audit log.
 
-Usage inside a tool:
+*How* execution pauses is delegated to a `Backend` (see backends/) --
+ApprovalGate itself has no framework-specific code. The default backend
+is LangGraphBackend, so existing LangGraph usage needs no changes:
 
     from approval_gate import ApprovalGate
 
@@ -33,6 +34,15 @@ for the full working version):
         pending = result["__interrupt__"][0].value
         # show `pending` to a human, get back a decision dict, then:
         result = graph.invoke(Command(resume=decision_dict), config)
+
+For anything that isn't LangGraph -- a plain Python tool-calling loop,
+a script, a notebook -- pass a different backend instead:
+
+    from approval_gate.backends import BlockingBackend
+
+    gate = ApprovalGate(db_path="audit.db", backend=BlockingBackend(ask_a_human))
+
+See examples/plain_python_demo.py for a fully working version of that.
 """
 
 from __future__ import annotations
@@ -40,10 +50,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Optional
 
-from langgraph.types import interrupt
-
 from . import pii
 from .audit import AuditLog
+from .backends import Backend
 
 
 @dataclass
@@ -55,9 +64,15 @@ class Decision:
 
 
 class ApprovalGate:
-    def __init__(self, db_path: str = "audit.db", default_thread_id: str = "default"):
+    def __init__(
+        self,
+        db_path: str = "audit.db",
+        default_thread_id: str = "default",
+        backend: Optional[Backend] = None,
+    ):
         self.audit = AuditLog(db_path)
         self.default_thread_id = default_thread_id
+        self.backend = backend or _default_backend()
 
     def request_approval(
         self,
@@ -78,10 +93,12 @@ class ApprovalGate:
             risk=risk,
         )
 
-        # This is the actual pause. On first call: raises a GraphInterrupt
-        # that LangGraph catches and surfaces as result["__interrupt__"].
-        # On resume: returns the value passed via Command(resume=...).
-        resume_value = interrupt(
+        # This is the actual pause. What "pause" means depends on the
+        # backend -- LangGraphBackend raises a GraphInterrupt that LangGraph
+        # catches and surfaces as result["__interrupt__"], resuming here
+        # with the value passed via Command(resume=...). Other backends
+        # (e.g. BlockingBackend) just return a decision synchronously.
+        resume_value = self.backend.wait_for_decision(
             {
                 "audit_id": audit_id,
                 "action": action_name,
@@ -115,3 +132,12 @@ class ApprovalGate:
 
     def close(self) -> None:
         self.audit.close()
+
+
+def _default_backend() -> Backend:
+    """LangGraphBackend stays the default so existing code (`ApprovalGate(db_path=...)`
+    with no backend argument) keeps working unchanged. Imported lazily so
+    that using a different backend doesn't require langgraph to be installed."""
+    from .backends import LangGraphBackend
+
+    return LangGraphBackend()
