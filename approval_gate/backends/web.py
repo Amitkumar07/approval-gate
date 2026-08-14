@@ -305,13 +305,32 @@ _PAGE = """<!doctype html>
 
   .reviewer-field input:focus { outline: none; }
 
-  /* ---- queue ---- */
+  /* ---- queue: a tabular row list, expand-in-place like an email inbox ---- */
 
   .list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.85rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
   }
+
+  .list-head {
+    display: grid;
+    grid-template-columns: 20px minmax(0, 1fr) 84px 90px 64px;
+    gap: 0.6rem;
+    padding: 0.5rem 0.9rem;
+    background: var(--surface-sunken);
+    border-bottom: 1px solid var(--border);
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-faint);
+  }
+
+  .list-head span:nth-child(3),
+  .list-head span:nth-child(4) { text-align: right; }
 
   .empty {
     text-align: center;
@@ -341,88 +360,125 @@ _PAGE = """<!doctype html>
     margin: 0 auto;
   }
 
-  .card {
-    display: flex;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    overflow: hidden;
+  .row-wrap { border-bottom: 1px solid var(--border); }
+  .row-wrap:last-child { border-bottom: none; }
+
+  /* button.row (not just .row) so this beats the generic `button {}`
+     rule declared later in the cascade -- both are single-class
+     specificity, so source order would otherwise let button {} win. */
+  button.row {
+    display: grid;
+    grid-template-columns: 20px minmax(0, 1fr) 84px 90px 64px;
+    align-items: center;
+    gap: 0.6rem;
+    width: 100%;
+    padding: 0.65rem 0.9rem;
+    background: none;
+    border: none;
+    border-radius: 0;
+    text-align: left;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: inherit;
+    font-weight: inherit;
+    color: inherit;
+    transition: background-color 0.1s ease;
   }
 
-  .stripe { flex: 0 0 3px; }
-  .stripe.risk-low { background: var(--risk-low-fg); }
-  .stripe.risk-medium { background: var(--risk-medium-fg); }
-  .stripe.risk-high { background: var(--risk-high-fg); }
+  button.row:hover { background: var(--surface-sunken); filter: none; }
+  button.row:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: -2px; }
+  .row-wrap.expanded button.row { background: var(--surface-sunken); }
 
-  .card-body {
-    flex: 1;
-    min-width: 0;
-    padding: 1rem 1.15rem 1.1rem;
+  .chevron {
+    font-size: 0.6rem;
+    color: var(--text-faint);
+    transition: transform 0.15s ease;
+    flex: none;
   }
 
-  .card-head {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 0.75rem;
-    margin-bottom: 0.85rem;
-  }
+  .row-wrap.expanded .chevron { transform: rotate(90deg); color: var(--accent); }
 
-  .card-head .titles { min-width: 0; }
+  .row-main { min-width: 0; display: flex; align-items: baseline; gap: 0.6rem; }
 
-  .action-name {
+  .row-action {
     font-family: var(--font-mono);
-    font-size: 0.94rem;
+    font-size: 0.85rem;
     font-weight: 600;
     letter-spacing: -0.01em;
-    word-break: break-word;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
-  .meta-row {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    margin-top: 0.4rem;
-    flex-wrap: wrap;
+  .row-preview {
+    font-size: 0.78rem;
+    color: var(--text-faint);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
   }
+
+  .row-findings {
+    text-align: right;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    white-space: nowrap;
+  }
+
+  .row-findings.has-findings { color: var(--risk-high-fg); font-weight: 600; }
+  .row-findings.none { color: var(--text-faint); }
+
+  .row-waiting {
+    text-align: right;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--text-faint);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .row-risk { display: flex; justify-content: flex-end; }
 
   .badge {
     display: inline-flex;
     align-items: center;
     font-family: var(--font-mono);
-    font-size: 0.66rem;
+    font-size: 0.62rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    padding: 0.15rem 0.5rem;
+    padding: 0.15rem 0.45rem;
     border-radius: 4px;
+    white-space: nowrap;
   }
 
   .badge.risk-low { background: var(--risk-low-bg); color: var(--risk-low-fg); }
   .badge.risk-medium { background: var(--risk-medium-bg); color: var(--risk-medium-fg); }
   .badge.risk-high { background: var(--risk-high-bg); color: var(--risk-high-fg); }
 
+  .detail {
+    padding: 0.2rem 0.9rem 1.1rem 2.35rem;
+    display: none;
+  }
+
+  .row-wrap.expanded .detail { display: block; }
+
   .route-tag {
+    display: inline-block;
     font-family: var(--font-mono);
     font-size: 0.68rem;
     color: var(--text-muted);
     background: var(--surface-sunken);
+    border: 1px solid var(--border);
     padding: 0.15rem 0.5rem;
     border-radius: 4px;
-  }
-
-  .waiting {
-    font-family: var(--font-mono);
-    font-size: 0.68rem;
-    color: var(--text-faint);
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
-    padding-top: 0.2rem;
+    margin-bottom: 0.7rem;
   }
 
   .fields {
     display: grid;
-    grid-template-columns: minmax(0, 28%) 1fr;
+    grid-template-columns: minmax(0, 26%) 1fr;
     gap: 0.45rem 0.65rem;
     margin-bottom: 0.85rem;
   }
@@ -439,7 +495,7 @@ _PAGE = """<!doctype html>
     width: 100%;
     box-sizing: border-box;
     resize: vertical;
-    background: var(--surface-sunken);
+    background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 6px;
     color: var(--text);
@@ -452,7 +508,6 @@ _PAGE = """<!doctype html>
   .field-value textarea:focus {
     outline: 2px solid var(--focus-ring);
     outline-offset: -1px;
-    background: var(--surface);
   }
 
   .findings {
@@ -586,13 +641,22 @@ _PAGE = """<!doctype html>
     transform: translateX(-50%) translateY(0);
   }
 
-  .card-enter {
+  .row-enter {
     animation: rise 0.25s ease-out;
   }
 
   @keyframes rise {
     from { opacity: 0; transform: translateY(4px); }
     to { opacity: 1; transform: translateY(0); }
+  }
+
+  .detail-enter {
+    animation: expand 0.15s ease-out;
+  }
+
+  @keyframes expand {
+    from { opacity: 0; }
+    to { opacity: 1; }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -620,7 +684,7 @@ _PAGE = """<!doctype html>
     </div>
   </div>
 
-  <div id="root" class="list"></div>
+  <div id="root"></div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -654,6 +718,12 @@ function timeAgo(seconds) {
 }
 
 let knownIds = new Set();
+let expandedId = null;
+
+function fieldPreview(args) {
+  const parts = Object.entries(args).map(([k, v]) => `${k}: ${v}`);
+  return parts.join("  ·  ") || "(no arguments)";
+}
 
 async function refresh() {
   let items;
@@ -680,7 +750,6 @@ async function refresh() {
     : "Nothing is waiting on you right now.";
 
   if (n === 0) {
-    root.className = "list";
     root.innerHTML = "";
     const empty = document.createElement("div");
     empty.className = "empty";
@@ -689,68 +758,105 @@ async function refresh() {
       '<div class="hint">New actions land here the instant an agent needs a decision.</div>';
     root.appendChild(empty);
     knownIds = new Set();
+    expandedId = null;
     return;
   }
 
-  const openIds = new Set(
+  if (expandedId && !items.some((it) => it.audit_id === expandedId)) {
+    expandedId = null; // the expanded item was just decided elsewhere
+  }
+
+  const rejectOpenIds = new Set(
     Array.from(root.querySelectorAll(".reject-panel.open")).map((el) => el.dataset.auditId)
   );
 
-  const nextIds = new Set(items.map((it) => it.audit_id));
-  root.className = "list";
-  root.innerHTML = "";
-  for (const item of items) {
-    const card = renderCard(item, openIds.has(item.audit_id));
-    if (!knownIds.has(item.audit_id)) card.classList.add("card-enter");
-    root.appendChild(card);
-  }
-  knownIds = nextIds;
-}
-
-function renderCard(item, rejectOpen) {
-  const card = document.createElement("div");
-  card.className = "card";
-
-  const stripe = document.createElement("div");
-  stripe.className = "stripe risk-" + item.risk;
-  card.appendChild(stripe);
-
-  const body = document.createElement("div");
-  body.className = "card-body";
+  const list = document.createElement("div");
+  list.className = "list";
 
   const head = document.createElement("div");
-  head.className = "card-head";
+  head.className = "list-head";
+  head.innerHTML = "<span></span><span>Action</span><span>Findings</span><span>Waiting</span><span>Risk</span>";
+  list.appendChild(head);
 
-  const titles = document.createElement("div");
-  titles.className = "titles";
-  const name = document.createElement("div");
-  name.className = "action-name";
+  const nextIds = new Set(items.map((it) => it.audit_id));
+  for (const item of items) {
+    const wrap = renderRow(item, item.audit_id === expandedId, rejectOpenIds.has(item.audit_id));
+    if (!knownIds.has(item.audit_id)) wrap.classList.add("row-enter");
+    list.appendChild(wrap);
+  }
+  knownIds = nextIds;
+
+  root.innerHTML = "";
+  root.appendChild(list);
+}
+
+function renderRow(item, isExpanded, rejectOpen) {
+  const wrap = document.createElement("div");
+  wrap.className = "row-wrap" + (isExpanded ? " expanded" : "");
+  wrap.dataset.auditId = item.audit_id;
+
+  const row = document.createElement("button");
+  row.type = "button";
+  row.className = "row";
+  row.setAttribute("aria-expanded", String(isExpanded));
+  row.onclick = () => {
+    expandedId = isExpanded ? null : item.audit_id;
+    refresh();
+  };
+
+  const chevron = document.createElement("span");
+  chevron.className = "chevron";
+  chevron.textContent = "▸";
+  row.appendChild(chevron);
+
+  const main = document.createElement("span");
+  main.className = "row-main";
+  const name = document.createElement("span");
+  name.className = "row-action";
   name.textContent = item.action;
-  titles.appendChild(name);
+  const preview = document.createElement("span");
+  preview.className = "row-preview";
+  preview.textContent = fieldPreview(item.args);
+  main.appendChild(name);
+  main.appendChild(preview);
+  row.appendChild(main);
 
-  const metaRow = document.createElement("div");
-  metaRow.className = "meta-row";
+  const findingsCell = document.createElement("span");
+  const count = (item.pii_findings || []).length;
+  findingsCell.className = "row-findings " + (count > 0 ? "has-findings" : "none");
+  findingsCell.textContent = count > 0 ? `⚠ ${count}` : "—";
+  row.appendChild(findingsCell);
+
+  const waitingCell = document.createElement("span");
+  waitingCell.className = "row-waiting";
+  waitingCell.textContent = typeof item._first_seen === "number"
+    ? timeAgo((Date.now() / 1000) - item._first_seen)
+    : "";
+  row.appendChild(waitingCell);
+
+  const riskCell = document.createElement("span");
+  riskCell.className = "row-risk";
   const badge = document.createElement("span");
   badge.className = "badge risk-" + item.risk;
-  badge.textContent = item.risk + " risk";
-  metaRow.appendChild(badge);
+  badge.textContent = item.risk;
+  riskCell.appendChild(badge);
+  row.appendChild(riskCell);
+
+  wrap.appendChild(row);
+  wrap.appendChild(renderDetail(item, rejectOpen));
+  return wrap;
+}
+
+function renderDetail(item, rejectOpen) {
+  const detail = document.createElement("div");
+  detail.className = "detail detail-enter";
+
   if (item.route_to) {
-    const route = document.createElement("span");
+    const route = document.createElement("div");
     route.className = "route-tag";
-    route.textContent = "-> " + item.route_to;
-    metaRow.appendChild(route);
+    route.textContent = "→ " + item.route_to;
+    detail.appendChild(route);
   }
-  titles.appendChild(metaRow);
-  head.appendChild(titles);
-
-  if (typeof item._first_seen === "number") {
-    const waiting = document.createElement("div");
-    waiting.className = "waiting";
-    waiting.textContent = timeAgo((Date.now() / 1000) - item._first_seen);
-    head.appendChild(waiting);
-  }
-
-  body.appendChild(head);
 
   if (item.pii_findings && item.pii_findings.length > 0) {
     const findings = document.createElement("div");
@@ -766,7 +872,7 @@ function renderCard(item, rejectOpen) {
       ul.appendChild(li);
     }
     findings.appendChild(ul);
-    body.appendChild(findings);
+    detail.appendChild(findings);
   }
 
   const fields = document.createElement("div");
@@ -786,7 +892,7 @@ function renderCard(item, rejectOpen) {
     fields.appendChild(key);
     fields.appendChild(val);
   }
-  body.appendChild(fields);
+  detail.appendChild(fields);
 
   const actions = document.createElement("div");
   actions.className = "actions";
@@ -809,7 +915,7 @@ function renderCard(item, rejectOpen) {
   rejectBtn.onclick = () => rejectPanel.classList.toggle("open");
   actions.appendChild(rejectBtn);
 
-  body.appendChild(actions);
+  detail.appendChild(actions);
 
   const rejectPanel = document.createElement("div");
   rejectPanel.className = "reject-panel" + (rejectOpen ? " open" : "");
@@ -832,10 +938,9 @@ function renderCard(item, rejectOpen) {
   rejectActions.appendChild(confirmBtn);
   rejectActions.appendChild(cancelBtn);
   rejectPanel.appendChild(rejectActions);
-  body.appendChild(rejectPanel);
+  detail.appendChild(rejectPanel);
 
-  card.appendChild(body);
-  return card;
+  return detail;
 }
 
 async function decide(auditId, decision, inputs, reason) {
