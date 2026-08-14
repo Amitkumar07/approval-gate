@@ -43,6 +43,17 @@ a script, a notebook -- pass a different backend instead:
     gate = ApprovalGate(db_path="audit.db", backend=BlockingBackend(ask_a_human))
 
 See examples/plain_python_demo.py for a fully working version of that.
+
+Pass `policy=` to skip the human step entirely for actions that don't
+need it (auto-approve low risk, always escalate deletes, route to a
+specific reviewer). See policy.py.
+
+    from approval_gate.policy import RulePolicy, Rule
+
+    gate = ApprovalGate(
+        db_path="audit.db",
+        policy=RulePolicy([Rule(risk="low", auto_approve=True)]),
+    )
 """
 
 from __future__ import annotations
@@ -53,6 +64,7 @@ from typing import Any, Optional
 from . import pii
 from .audit import AuditLog
 from .backends import Backend
+from .policy import Policy
 
 
 @dataclass
@@ -69,10 +81,12 @@ class ApprovalGate:
         db_path: str = "audit.db",
         default_thread_id: str = "default",
         backend: Optional[Backend] = None,
+        policy: Optional[Policy] = None,
     ):
         self.audit = AuditLog(db_path)
         self.default_thread_id = default_thread_id
         self.backend = backend or _default_backend()
+        self.policy = policy
 
     def request_approval(
         self,
@@ -93,20 +107,30 @@ class ApprovalGate:
             risk=risk,
         )
 
-        # This is the actual pause. What "pause" means depends on the
-        # backend -- LangGraphBackend raises a GraphInterrupt that LangGraph
-        # catches and surfaces as result["__interrupt__"], resuming here
-        # with the value passed via Command(resume=...). Other backends
-        # (e.g. BlockingBackend) just return a decision synchronously.
-        resume_value = self.backend.wait_for_decision(
-            {
-                "audit_id": audit_id,
-                "action": action_name,
-                "args": args,
-                "pii_findings": findings,
-                "risk": risk,
-            }
-        )
+        pending = {
+            "audit_id": audit_id,
+            "action": action_name,
+            "args": args,
+            "pii_findings": findings,
+            "risk": risk,
+        }
+
+        # A policy gets first look, before a human is ever bothered. It
+        # must be a pure function of `pending` -- like everything before
+        # a pause, it can re-run on a LangGraph resume-replay (see
+        # audit.py), so it can't have side effects of its own. Returning
+        # a decision short-circuits the backend entirely (nothing shows
+        # up in a review inbox, no notifier fires); returning None falls
+        # through to a human exactly as if there were no policy at all.
+        resume_value = self.policy(pending) if self.policy is not None else None
+
+        if resume_value is None:
+            # This is the actual pause. What "pause" means depends on the
+            # backend -- LangGraphBackend raises a GraphInterrupt that LangGraph
+            # catches and surfaces as result["__interrupt__"], resuming here
+            # with the value passed via Command(resume=...). Other backends
+            # (e.g. BlockingBackend) just return a decision synchronously.
+            resume_value = self.backend.wait_for_decision(pending)
 
         decision_type = resume_value.get("decision", "reject")
         decided_by = resume_value.get("by", "unknown")

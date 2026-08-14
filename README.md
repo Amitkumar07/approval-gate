@@ -11,9 +11,9 @@ what happened.
 
 > **Status: early / seeking feedback.** The core (audit log, PII
 > scanning, approve/edit/reject loop), the framework-agnostic backend
-> abstraction, a local web review UI, and Slack notifications are all
-> built and tested. Per-action policies are next — see
-> [Roadmap](#roadmap).
+> abstraction, a local web review UI, Slack notifications, and
+> per-action policies are all built and tested. A hosted dashboard is
+> the only thing left on the roadmap — see [Roadmap](#roadmap).
 
 ```
 agent proposes an action
@@ -24,9 +24,9 @@ agent proposes an action
   │     secrets      │
   └────────┬─────────┘
            ▼
-  ┌─────────────────┐      built on LangGraph's native interrupt() --
-  │   PAUSE & ASK    │ ──   no custom execution engine, no lock-in
-  │   a human        │
+  ┌─────────────────┐      policy decides: auto-approve/reject, or
+  │   PAUSE & ASK    │ ──   pause and ask a human (browser, terminal,
+  │   a human        │      LangGraph interrupt() -- pluggable)
   └────────┬─────────┘
            ▼
   approve / edit / reject ──→ action runs (or doesn't) ──→ logged forever
@@ -169,12 +169,44 @@ a notifier — write your own for email, PagerDuty, a custom webhook,
 whatever routes to your team. A broken notifier is caught and logged,
 never allowed to block or fail the approval flow itself.
 
+## Policies: not every action needs a human
+
+Pausing for a human on *every* call doesn't scale past a handful of
+action types before reviewers start rubber-stamping everything, which
+defeats the point. Pass `policy=` to auto-approve, auto-reject, or
+route actions before a human is ever bothered:
+
+```python
+from approval_gate import ApprovalGate
+from approval_gate.policy import Rule, RulePolicy
+
+policy = RulePolicy([
+    Rule(risk="low", has_pii=False, auto_approve=True, name="auto-low-risk"),
+    Rule(action_prefix="delete_", route_to="oncall-reviewer"),
+])
+gate = ApprovalGate(db_path="audit.db", policy=policy)
+```
+
+Rules are evaluated in order; the first match wins. `auto_approve` /
+`auto_reject` skip the human step entirely — nothing shows up in a
+review inbox, no notifier fires, but the decision is still written to
+the audit log with `decided_by="policy:<rule-name>"` so it stays fully
+traceable. `route_to` doesn't auto-decide; it tags the pending payload
+so the backend/notifier can direct it to the right reviewer, and the
+action still goes through normal human review.
+
+For anything a declarative rule can't express, pass a plain callable
+instead — `(pending: dict) -> Optional[dict]`, same escape hatch as
+`Backend`/`Notifier`. A policy must be a pure function of `pending`: it
+can re-run on a LangGraph resume-replay, same as everything else before
+a pause (see the note on LangGraph internals below).
+
 See `examples/email_agent_demo.py` (LangGraph, terminal review),
 `examples/plain_python_demo.py` (no framework, terminal review),
-`examples/web_inbox_demo.py` (browser review), and
+`examples/web_inbox_demo.py` (browser review),
 `examples/notifier_demo.py` (Slack notification on new pending
-actions) for fully working versions you can run right now with no API
-key:
+actions), and `examples/policy_demo.py` (auto-approve + routing) for
+fully working versions you can run right now with no API key:
 
 ```bash
 git clone <repo>
@@ -184,6 +216,7 @@ python examples/email_agent_demo.py     # LangGraph, terminal
 python examples/plain_python_demo.py    # no framework, terminal
 python examples/web_inbox_demo.py       # browser review inbox
 python examples/notifier_demo.py        # + Slack notification
+python examples/policy_demo.py          # + auto-approve / routing
 python examples/view_audit_log.py       # see what got logged
 ```
 
@@ -224,17 +257,19 @@ subtlety to keep in mind.
       browser instead of a blocking terminal `input()` prompt.
 - [x] Notification when something's waiting for review (`SlackNotifier`,
       pluggable for anything else — email, PagerDuty, custom webhooks).
-- [ ] Per-action policies (e.g. auto-approve low-risk, always pause on
-      "delete", route by action type to a specific reviewer). This is
-      next.
+- [x] Per-action policies (`RulePolicy`) — auto-approve low-risk,
+      always escalate deletes, route by action type to a specific
+      reviewer.
 - [ ] Hosted dashboard (team accounts, longer-retention Postgres-backed
       log) — paid tier, self-hosted core stays free and open forever.
+      This is the only thing left.
 
 Contributions welcome — good first ones: a new `Backend`
 implementation (e.g. for a different graph framework, or a
-webhook/async reviewer), or a new `Notifier` (email, PagerDuty, MS
-Teams). Open an issue if you want to discuss an approach before
-sending a PR.
+webhook/async reviewer), a new `Notifier` (email, PagerDuty, MS
+Teams), or richer `Rule` matching (time-of-day, argument-value
+conditions, multi-reviewer quorum). Open an issue if you want to
+discuss an approach before sending a PR.
 
 ## License
 
