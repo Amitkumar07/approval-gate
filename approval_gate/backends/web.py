@@ -939,8 +939,20 @@ def _make_handler(backend: WebBackend):
                 self.end_headers()
                 return
 
-            length = int(self.headers.get("Content-Length", 0))
-            body = json.loads(self.rfile.read(length) or b"{}")
+            # A malformed request here shouldn't crash the request thread
+            # with an unhandled traceback -- it's a client mistake (bad
+            # JSON, wrong shape), not a server bug, so it gets a 400 like
+            # any other API.
+            try:
+                length = int(self.headers.get("Content-Length", 0))
+                raw = self.rfile.read(length) if length > 0 else b"{}"
+                body = json.loads(raw)
+                if not isinstance(body, dict):
+                    raise ValueError("expected a JSON object")
+            except (ValueError, json.JSONDecodeError):
+                self._send_json({"error": "malformed request body"}, status=400)
+                return
+
             audit_id = body.get("audit_id")
             with backend._lock:
                 result_queue = backend._results.get(audit_id)

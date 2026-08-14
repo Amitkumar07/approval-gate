@@ -92,3 +92,41 @@ def test_decide_on_unknown_audit_id_returns_404():
             assert e.code == 404
     finally:
         backend.shutdown()
+
+
+def test_malformed_json_body_returns_400_not_a_crash():
+    backend = make_backend()
+    try:
+        req = urllib.request.Request(
+            backend.url + "/api/decide",
+            data=b"{not valid json",
+            headers={"Content-Type": "application/json"},
+        )
+        try:
+            urllib.request.urlopen(req)
+            assert False, "expected HTTPError"
+        except urllib.error.HTTPError as e:
+            assert e.code == 400
+
+        # server must still be alive and serving after a bad request
+        with urllib.request.urlopen(backend.url + "/") as resp:
+            assert resp.status == 200
+    finally:
+        backend.shutdown()
+
+
+def test_non_object_json_body_returns_400():
+    backend = make_backend()
+    try:
+        req = urllib.request.Request(
+            backend.url + "/api/decide",
+            data=b'"just a string"',
+            headers={"Content-Type": "application/json"},
+        )
+        try:
+            urllib.request.urlopen(req)
+            assert False, "expected HTTPError"
+        except urllib.error.HTTPError as e:
+            assert e.code == 400
+    finally:
+        backend.shutdown()

@@ -1,5 +1,6 @@
 import sys
 import tempfile
+import threading
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -60,3 +61,33 @@ def test_make_id_is_deterministic():
     id1 = make_id("t1", "send_email", {"to": "a@b.com"})
     id2 = make_id("t1", "send_email", {"to": "a@b.com"})
     assert id1 == id2
+
+
+def test_concurrent_writes_from_many_threads_do_not_corrupt_or_error():
+    """An agent doing parallel tool calls hits AuditLog from multiple
+    threads sharing one connection concurrently. Without a lock around
+    every access, this doesn't just raise -- it can corrupt the sqlite
+    file on disk. Regression test for that."""
+    log = make_log()
+    errors = []
+
+    def write_one(i):
+        try:
+            rid = log.upsert_pending(f"thread-{i}", "send_email", {"to": f"user{i}@example.com"}, [], risk="low")
+            log.record_decision(rid, status="approved", decided_by=f"reviewer-{i}", reason="")
+            log.record_result(rid, f"sent to user{i}")
+            log.get(rid)
+            log.list_all()
+        except Exception as e:  # noqa: BLE001 -- any exception here is the failure this test guards against
+            errors.append(e)
+
+    threads = [threading.Thread(target=write_one, args=(i,)) for i in range(20)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    assert errors == [], f"concurrent access raised: {errors}"
+    records = log.list_all()
+    assert len(records) == 20
+    assert all(r.status == "approved" for r in records)

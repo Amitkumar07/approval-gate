@@ -205,8 +205,11 @@ See `examples/email_agent_demo.py` (LangGraph, terminal review),
 `examples/plain_python_demo.py` (no framework, terminal review),
 `examples/web_inbox_demo.py` (browser review),
 `examples/notifier_demo.py` (Slack notification on new pending
-actions), and `examples/policy_demo.py` (auto-approve + routing) for
-fully working versions you can run right now with no API key:
+actions), `examples/policy_demo.py` (auto-approve + routing), and
+`examples/seed_inbox_demo.py` (six actions queued at once, covering
+every risk level / PII / routing combination -- useful for seeing the
+inbox fully populated) for fully working versions you can run right
+now with no API key:
 
 ```bash
 git clone <repo>
@@ -217,6 +220,7 @@ python examples/plain_python_demo.py    # no framework, terminal
 python examples/web_inbox_demo.py       # browser review inbox
 python examples/notifier_demo.py        # + Slack notification
 python examples/policy_demo.py          # + auto-approve / routing
+python examples/seed_inbox_demo.py      # fully populated inbox
 python examples/view_audit_log.py       # see what got logged
 ```
 
