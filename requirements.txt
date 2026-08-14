@@ -1,0 +1,6 @@
+langgraph>=0.2.0
+langchain-core>=0.3.0
+
+# optional, for richer PII detection -- the package works fine without this,
+# falling back to regex-only detection
+# presidio-analyzer>=2.2
