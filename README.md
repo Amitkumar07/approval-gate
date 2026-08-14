@@ -11,8 +11,8 @@ what happened.
 
 > **Status: early / seeking feedback.** The core (audit log, PII
 > scanning, approve/edit/reject loop), the framework-agnostic backend
-> abstraction, and a local web review UI are all built and tested.
-> Notifications and per-action policies are next — see
+> abstraction, a local web review UI, and Slack notifications are all
+> built and tested. Per-action policies are next — see
 > [Roadmap](#roadmap).
 
 ```
@@ -145,10 +145,36 @@ Writing a new backend means implementing one method,
 — useful if you're on a different graph framework or want an
 async/webhook-driven reviewer.
 
+## Notifications
+
+A review sitting in a browser tab nobody's looking at doesn't help.
+Pass `notifier=` to `WebBackend` to get pinged the instant something
+needs review:
+
+```python
+from approval_gate.backends import WebBackend
+from approval_gate.notifiers import SlackNotifier
+
+backend = WebBackend(
+    port=8642,
+    notifier=SlackNotifier(webhook_url="https://hooks.slack.com/services/..."),
+)
+```
+
+`SlackNotifier` is built in (stdlib `urllib`, no `slack-sdk`
+dependency) and posts the action name, risk level, a flag if sensitive
+data was detected, and a link straight into the review inbox. Any
+callable matching `(pending: dict, review_url: str) -> None` works as
+a notifier — write your own for email, PagerDuty, a custom webhook,
+whatever routes to your team. A broken notifier is caught and logged,
+never allowed to block or fail the approval flow itself.
+
 See `examples/email_agent_demo.py` (LangGraph, terminal review),
-`examples/plain_python_demo.py` (no framework, terminal review), and
-`examples/web_inbox_demo.py` (browser review) for fully working
-versions you can run right now with no API key:
+`examples/plain_python_demo.py` (no framework, terminal review),
+`examples/web_inbox_demo.py` (browser review), and
+`examples/notifier_demo.py` (Slack notification on new pending
+actions) for fully working versions you can run right now with no API
+key:
 
 ```bash
 git clone <repo>
@@ -157,6 +183,7 @@ pip install -r requirements.txt
 python examples/email_agent_demo.py     # LangGraph, terminal
 python examples/plain_python_demo.py    # no framework, terminal
 python examples/web_inbox_demo.py       # browser review inbox
+python examples/notifier_demo.py        # + Slack notification
 python examples/view_audit_log.py       # see what got logged
 ```
 
@@ -195,18 +222,19 @@ subtlety to keep in mind.
       tied to one agent framework.
 - [x] Local web review UI (`WebBackend`) — approve/edit/reject from a
       browser instead of a blocking terminal `input()` prompt.
-- [ ] Slack/email notification when something's waiting for review.
-      This is next — `WebBackend` makes it natural (ping a URL,
-      reviewer clicks through to the inbox).
+- [x] Notification when something's waiting for review (`SlackNotifier`,
+      pluggable for anything else — email, PagerDuty, custom webhooks).
 - [ ] Per-action policies (e.g. auto-approve low-risk, always pause on
-      "delete", route by action type to a specific reviewer).
+      "delete", route by action type to a specific reviewer). This is
+      next.
 - [ ] Hosted dashboard (team accounts, longer-retention Postgres-backed
       log) — paid tier, self-hosted core stays free and open forever.
 
-Contributions welcome — a good first one is a new `Backend`
+Contributions welcome — good first ones: a new `Backend`
 implementation (e.g. for a different graph framework, or a
-webhook/async reviewer). Open an issue if you want to discuss an
-approach before sending a PR.
+webhook/async reviewer), or a new `Notifier` (email, PagerDuty, MS
+Teams). Open an issue if you want to discuss an approach before
+sending a PR.
 
 ## License
 

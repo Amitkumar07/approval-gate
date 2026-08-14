@@ -28,6 +28,14 @@ Usage:
 
 Multiple pending actions queue up and are all shown in the inbox at
 once; each is decided independently by its own audit_id.
+
+Pass `notifier=` to get pinged (Slack, email, anything) the moment an
+action needs review, instead of relying on someone to have the inbox
+open. See notifiers.py.
+
+    from approval_gate.notifiers import SlackNotifier
+
+    backend = WebBackend(port=8642, notifier=SlackNotifier(webhook_url="https://hooks.slack.com/..."))
 """
 
 from __future__ import annotations
@@ -36,7 +44,9 @@ import json
 import queue
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from typing import Any
+from typing import Any, Optional
+
+from ..notifiers import Notifier, safe_notify
 
 from .base import Backend
 
@@ -179,10 +189,11 @@ setInterval(refresh, 2000);
 
 
 class WebBackend(Backend):
-    def __init__(self, host: str = "127.0.0.1", port: int = 8642):
+    def __init__(self, host: str = "127.0.0.1", port: int = 8642, notifier: Optional[Notifier] = None):
         self._pending: dict[str, dict[str, Any]] = {}
         self._results: dict[str, queue.Queue] = {}
         self._lock = threading.Lock()
+        self.notifier = notifier
 
         handler = _make_handler(self)
         self._server = ThreadingHTTPServer((host, port), handler)
@@ -198,6 +209,10 @@ class WebBackend(Backend):
         with self._lock:
             self._pending[audit_id] = pending
             self._results[audit_id] = result_queue
+
+        if self.notifier is not None:
+            safe_notify(self.notifier, pending, self.url)
+
         try:
             return result_queue.get()  # blocks until the browser POSTs a decision
         finally:
