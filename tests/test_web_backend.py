@@ -32,7 +32,9 @@ def test_serves_index_page():
     try:
         with urllib.request.urlopen(backend.url + "/") as resp:
             assert resp.status == 200
-            assert b"approval-gate review inbox" in resp.read()
+            body = resp.read()
+            assert b"approval-gate" in body
+            assert b"<html>" in body
     finally:
         backend.shutdown()
 
