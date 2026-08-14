@@ -50,7 +50,6 @@ string in every decision.
 from __future__ import annotations
 
 import json
-import queue
 import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -59,6 +58,7 @@ from typing import Any, Optional
 from ..notifiers import Notifier, safe_notify
 
 from .base import Backend
+from ._queue_base import _PendingQueueBackend
 
 _PAGE = """<!doctype html>
 <html>
@@ -969,11 +969,9 @@ setInterval(refresh, 2000);
 """
 
 
-class WebBackend(Backend):
+class WebBackend(_PendingQueueBackend, Backend):
     def __init__(self, host: str = "127.0.0.1", port: int = 8642, notifier: Optional[Notifier] = None):
-        self._pending: dict[str, dict[str, Any]] = {}
-        self._results: dict[str, queue.Queue] = {}
-        self._lock = threading.Lock()
+        super().__init__()
         self.notifier = notifier
 
         handler = _make_handler(self)
@@ -986,13 +984,10 @@ class WebBackend(Backend):
 
     def wait_for_decision(self, pending: dict[str, Any]) -> dict[str, Any]:
         audit_id = pending["audit_id"]
-        result_queue: queue.Queue = queue.Queue(maxsize=1)
         # _first_seen is UI-only (drives the "waiting Xm" indicator), so it's
         # added to a copy rather than the payload handed to the notifier.
         display_pending = {**pending, "_first_seen": time.time()}
-        with self._lock:
-            self._pending[audit_id] = display_pending
-            self._results[audit_id] = result_queue
+        result_queue = self._register(audit_id, display_pending)
 
         if self.notifier is not None:
             safe_notify(self.notifier, pending, self.url)
@@ -1000,9 +995,7 @@ class WebBackend(Backend):
         try:
             return result_queue.get()  # blocks until the browser POSTs a decision
         finally:
-            with self._lock:
-                self._pending.pop(audit_id, None)
-                self._results.pop(audit_id, None)
+            self._unregister(audit_id)
 
     def shutdown(self) -> None:
         self._server.shutdown()
@@ -1031,9 +1024,7 @@ def _make_handler(backend: WebBackend):
                 self.end_headers()
                 self.wfile.write(body)
             elif self.path == "/api/pending":
-                with backend._lock:
-                    items = list(backend._pending.values())
-                self._send_json(items)
+                self._send_json(backend._list_pending())
             else:
                 self.send_response(404)
                 self.end_headers()
@@ -1059,19 +1050,15 @@ def _make_handler(backend: WebBackend):
                 return
 
             audit_id = body.get("audit_id")
-            with backend._lock:
-                result_queue = backend._results.get(audit_id)
-            if result_queue is None:
+            decision = {
+                "decision": body.get("decision", "reject"),
+                "by": body.get("by", "web-reviewer"),
+                "reason": body.get("reason", ""),
+                "args": body.get("args"),
+            }
+            if not backend.resolve(audit_id, decision):
                 self._send_json({"error": "unknown or already-decided audit_id"}, status=404)
                 return
-            result_queue.put(
-                {
-                    "decision": body.get("decision", "reject"),
-                    "by": body.get("by", "web-reviewer"),
-                    "reason": body.get("reason", ""),
-                    "args": body.get("args"),
-                }
-            )
             self._send_json({"ok": True})
 
     return Handler

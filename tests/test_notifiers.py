@@ -29,8 +29,7 @@ def test_web_backend_calls_notifier_on_new_pending():
         assert calls == [("xyz", "send_email", backend.url)]
 
         # unblock so the thread doesn't leak past the test
-        with backend._lock:
-            backend._results["xyz"].put({"decision": "approve", "by": "t"})
+        backend.resolve("xyz", {"decision": "approve", "by": "t"})
         t.join(timeout=2)
     finally:
         backend.shutdown()
@@ -53,8 +52,7 @@ def test_broken_notifier_does_not_block_approval():
         t.start()
         time.sleep(0.2)
 
-        with backend._lock:
-            backend._results["abc"].put({"decision": "approve", "by": "t"})
+        backend.resolve("abc", {"decision": "approve", "by": "t"})
         t.join(timeout=2)
 
         assert result_holder["decision"]["decision"] == "approve"
