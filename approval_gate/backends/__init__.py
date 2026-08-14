@@ -12,8 +12,17 @@ from .blocking import BlockingBackend
 from .web import WebBackend
 from .webhook import WebhookBackend
 from .email import EmailBackend
+from .slack import SlackBackend
 
-__all__ = ["Backend", "LangGraphBackend", "BlockingBackend", "WebBackend", "WebhookBackend", "EmailBackend"]
+__all__ = [
+    "Backend",
+    "LangGraphBackend",
+    "BlockingBackend",
+    "WebBackend",
+    "WebhookBackend",
+    "EmailBackend",
+    "SlackBackend",
+]
 
 
 def __getattr__(name: str):
