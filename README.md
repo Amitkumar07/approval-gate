@@ -264,12 +264,10 @@ subtlety to keep in mind.
       log) — paid tier, self-hosted core stays free and open forever.
       This is the only thing left.
 
-Contributions welcome — good first ones: a new `Backend`
-implementation (e.g. for a different graph framework, or a
-webhook/async reviewer), a new `Notifier` (email, PagerDuty, MS
-Teams), or richer `Rule` matching (time-of-day, argument-value
-conditions, multi-reviewer quorum). Open an issue if you want to
-discuss an approach before sending a PR.
+Contributions welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for
+setup, where things live, and a few good-first-issue ideas (a new
+`Backend`, a new `Notifier`, richer `Rule` matching). Open an issue if
+you want to discuss an approach before sending a PR.
 
 ## License
 
