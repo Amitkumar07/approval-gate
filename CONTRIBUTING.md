@@ -34,7 +34,11 @@ don't need them installed to test it.
 - `approval_gate/pii.py` -- regex + optional Presidio scanning.
 - `approval_gate/backends/` -- pluggable pause/resume mechanisms
   (`Backend` protocol, `LangGraphBackend`, `BlockingBackend`,
-  `WebBackend`).
+  `WebBackend`, `WebhookBackend`, `EmailBackend`, `SlackBackend`).
+  `_queue_base.py`'s `_PendingQueueBackend` is the shared "block a
+  thread, resolve it from an HTTP handler" plumbing every async
+  channel builds on -- see BACKEND_TEMPLATE.md before writing a new
+  one from scratch.
 - `approval_gate/notifiers.py` -- pluggable "something needs review"
   pings (`Notifier`, `SlackNotifier`).
 - `approval_gate/policy.py` -- pluggable auto-approve/reject/routing
@@ -45,14 +49,18 @@ don't need them installed to test it.
 
 ## Good first issues
 
-- **A new `Backend`.** Implement `wait_for_decision(pending) -> dict`
-  (see `approval_gate/backends/base.py`) for a different graph
-  framework, or an async/webhook-driven reviewer. `BlockingBackend` is
-  the simplest existing example to model against.
-- **A new `Notifier`.** Any callable matching
-  `(pending: dict, review_url: str) -> None` works -- email, PagerDuty,
-  MS Teams. `SlackNotifier` in `notifiers.py` is ~25 lines and a
-  reasonable template.
+- **A new approval channel** (Teams, Discord, SMS/Twilio, PagerDuty, a
+  CLI daemon, whatever your team uses). This is the highest-value
+  contribution this project can accept -- see
+  **[BACKEND_TEMPLATE.md](BACKEND_TEMPLATE.md)** for the full
+  checklist and the shared plumbing (`_PendingQueueBackend`) that
+  makes this a few hours of work, not a redesign.
+- **A new `Notifier`** (distinct from a full channel -- a `Notifier`
+  only *pings*, e.g. `SlackNotifier` posts a link into `WebBackend`'s
+  inbox; a `Backend` like `SlackBackend` resolves the decision itself).
+  Any callable matching `(pending: dict, review_url: str) -> None`
+  works -- PagerDuty, MS Teams. `SlackNotifier` in `notifiers.py` is
+  ~25 lines and a reasonable template.
 - **Richer `Rule` matching.** Time-of-day windows, argument-value
   conditions (e.g. amount thresholds on a `wire_transfer` action),
   multi-reviewer quorum. Keep `Rule` declarative and pure -- see the

@@ -11,9 +11,9 @@ what happened.
 
 > **Status: early / seeking feedback.** The core (audit log, PII
 > scanning, approve/edit/reject loop), the framework-agnostic backend
-> abstraction, a local web review UI, Slack notifications, and
-> per-action policies are all built and tested. A hosted dashboard is
-> the only thing left on the roadmap — see [Roadmap](#roadmap).
+> abstraction, four approval channels (browser, webhook, email, Slack),
+> and per-action policies are all built and tested. A hosted dashboard
+> is the only thing left on the roadmap — see [Roadmap](#roadmap).
 
 ```
 agent proposes an action
@@ -140,10 +140,64 @@ stack:
   unchanged — combine it with LangGraph or plain Python the same way
   as `BlockingBackend`.
 
+- **`WebhookBackend`** — bring your own system. POSTs the pending
+  action to a URL you configure; your system POSTs the decision back.
+  For teams with their own ticketing/admin tooling who don't want to
+  adopt Slack or email specifically for this:
+
+  ```python
+  from approval_gate.backends import WebhookBackend
+
+  backend = WebhookBackend(notify_url="https://internal-tools.example.com/incoming", port=8643)
+  gate = ApprovalGate(db_path="audit.db", backend=backend)
+  # your system calls back POST {backend.url}/decide with the decision
+  ```
+
+- **`EmailBackend`** — signed one-click approve/reject links, no
+  browser tab or login required. Good for slower-moving approvals:
+
+  ```python
+  from approval_gate.backends import EmailBackend
+
+  backend = EmailBackend(
+      smtp_host="smtp.example.com", smtp_port=587,
+      smtp_user="bot@example.com", smtp_password="...",
+      from_addr="approval-gate@example.com", to_addr="reviewer@example.com",
+      secret="a-random-string-you-generate-once",
+      public_base_url="https://approvals.example.com",
+  )
+  gate = ApprovalGate(db_path="audit.db", backend=backend)
+  ```
+
+  Links are HMAC-signed so they can't be edited into approving a
+  different action; `args` aren't editable from an email link, only
+  approve/reject.
+
+- **`SlackBackend`** — interactive Approve/Reject buttons right in a
+  Slack message, resolved without leaving Slack:
+
+  ```python
+  from approval_gate.backends import SlackBackend
+
+  backend = SlackBackend(
+      bot_token="xoxb-...", signing_secret="...", channel="#approvals", port=8645,
+  )
+  gate = ApprovalGate(db_path="audit.db", backend=backend)
+  ```
+
+  Every interaction is verified against Slack's own request-signing
+  scheme before anything in the payload is trusted. Needs a public
+  Request URL Slack can reach (a tunnel in development, real ingress
+  in production) — see `approval_gate/backends/slack.py`'s docstring
+  for the one-time Slack app setup.
+
 Writing a new backend means implementing one method,
-`wait_for_decision(pending) -> dict` (see `approval_gate/backends/base.py`)
-— useful if you're on a different graph framework or want an
-async/webhook-driven reviewer.
+`wait_for_decision(pending) -> dict` (see `approval_gate/backends/base.py`).
+Any backend where the decision arrives asynchronously (a click, a
+webhook, a reply) can build on `_PendingQueueBackend` instead of
+re-solving "wait on a thread, resolve it from an HTTP handler" from
+scratch — see **[BACKEND_TEMPLATE.md](BACKEND_TEMPLATE.md)** for the
+full pattern and a contribution checklist.
 
 ## Notifications
 
@@ -201,26 +255,23 @@ instead — `(pending: dict) -> Optional[dict]`, same escape hatch as
 can re-run on a LangGraph resume-replay, same as everything else before
 a pause (see the note on LangGraph internals below).
 
-See `examples/email_agent_demo.py` (LangGraph, terminal review),
-`examples/plain_python_demo.py` (no framework, terminal review),
-`examples/web_inbox_demo.py` (browser review),
-`examples/notifier_demo.py` (Slack notification on new pending
-actions), `examples/policy_demo.py` (auto-approve + routing), and
-`examples/seed_inbox_demo.py` (six actions queued at once, covering
-every risk level / PII / routing combination -- useful for seeing the
-inbox fully populated) for fully working versions you can run right
-now with no API key:
+Every example below runs with no API key and no real third-party
+credentials -- each fakes out only the third-party call (SMTP, Slack's
+API) while the actual approval-gate mechanics run for real:
 
 ```bash
 git clone <repo>
 cd approval-gate
 pip install -r requirements.txt
-python examples/email_agent_demo.py     # LangGraph, terminal
-python examples/plain_python_demo.py    # no framework, terminal
+python examples/email_agent_demo.py     # LangGraph, terminal review
+python examples/plain_python_demo.py    # no framework, terminal review
 python examples/web_inbox_demo.py       # browser review inbox
-python examples/notifier_demo.py        # + Slack notification
+python examples/webhook_demo.py         # bring-your-own-system channel
+python examples/email_demo.py           # signed approve/reject email links
+python examples/slack_demo.py           # interactive Slack buttons
+python examples/notifier_demo.py        # + Slack ping into the web inbox
 python examples/policy_demo.py          # + auto-approve / routing
-python examples/seed_inbox_demo.py      # fully populated inbox
+python examples/seed_inbox_demo.py      # fully populated inbox (6 scenarios at once)
 python examples/view_audit_log.py       # see what got logged
 ```
 
@@ -264,14 +315,22 @@ subtlety to keep in mind.
 - [x] Per-action policies (`RulePolicy`) — auto-approve low-risk,
       always escalate deletes, route by action type to a specific
       reviewer.
+- [x] Multiple approval channels — browser (`WebBackend`),
+      bring-your-own-system (`WebhookBackend`), signed email links
+      (`EmailBackend`), interactive Slack buttons (`SlackBackend`).
+      More channels (Teams, PagerDuty, SMS) are a community surface
+      now, not a backlog — see
+      [BACKEND_TEMPLATE.md](BACKEND_TEMPLATE.md).
 - [ ] Hosted dashboard (team accounts, longer-retention Postgres-backed
       log) — paid tier, self-hosted core stays free and open forever.
       This is the only thing left.
 
 Contributions welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for
-setup, where things live, and a few good-first-issue ideas (a new
-`Backend`, a new `Notifier`, richer `Rule` matching). Open an issue if
-you want to discuss an approach before sending a PR.
+setup and where things live, and
+[BACKEND_TEMPLATE.md](BACKEND_TEMPLATE.md) if you want to add another
+approval channel — that's the highest-value contribution this project
+can accept right now. Open an issue if you want to discuss an approach
+before sending a PR.
 
 ## License
 
