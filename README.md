@@ -10,10 +10,10 @@ and waits for approve / edit / reject — with a permanent record of
 what happened.
 
 > **Status: early / seeking feedback.** The core (audit log, PII
-> scanning, approve/edit/reject loop) is solid and tested. The backend
-> abstraction that makes it framework-agnostic (see below) just
-> landed. A web review UI, notifications, and per-action policies are
-> the next things being built — see [Roadmap](#roadmap).
+> scanning, approve/edit/reject loop), the framework-agnostic backend
+> abstraction, and a local web review UI are all built and tested.
+> Notifications and per-action policies are next — see
+> [Roadmap](#roadmap).
 
 ```
 agent proposes an action
@@ -120,23 +120,43 @@ stack:
   gate = ApprovalGate(db_path="audit.db", backend=BlockingBackend(ask_a_human))
   ```
 
+- **`WebBackend`** — a real review inbox in a browser tab instead of a
+  blocking terminal prompt. Zero new dependencies (stdlib
+  `http.server`); runs locally and polls for pending actions:
+
+  ```python
+  from approval_gate import ApprovalGate
+  from approval_gate.backends import WebBackend
+
+  backend = WebBackend(port=8642)
+  gate = ApprovalGate(db_path="audit.db", backend=backend)
+  print(f"Review inbox running at {backend.url}")
+  # ... call gate.request_approval(...) from your agent as usual ...
+  backend.shutdown()
+  ```
+
+  Multiple pending actions queue up and are all shown at once, each
+  decided independently. Works with any other backend's caller code
+  unchanged — combine it with LangGraph or plain Python the same way
+  as `BlockingBackend`.
+
 Writing a new backend means implementing one method,
 `wait_for_decision(pending) -> dict` (see `approval_gate/backends/base.py`)
 — useful if you're on a different graph framework or want an
 async/webhook-driven reviewer.
 
-See `examples/email_agent_demo.py` (LangGraph) and
-`examples/plain_python_demo.py` (no framework) for fully working
-versions you can run right now with no API key. Both include a
-terminal-based approval inbox so you can see the whole loop in under a
-minute:
+See `examples/email_agent_demo.py` (LangGraph, terminal review),
+`examples/plain_python_demo.py` (no framework, terminal review), and
+`examples/web_inbox_demo.py` (browser review) for fully working
+versions you can run right now with no API key:
 
 ```bash
 git clone <repo>
 cd approval-gate
 pip install -r requirements.txt
-python examples/email_agent_demo.py     # LangGraph
-python examples/plain_python_demo.py    # no framework
+python examples/email_agent_demo.py     # LangGraph, terminal
+python examples/plain_python_demo.py    # no framework, terminal
+python examples/web_inbox_demo.py       # browser review inbox
 python examples/view_audit_log.py       # see what got logged
 ```
 
@@ -173,9 +193,11 @@ subtlety to keep in mind.
 - [x] Framework-agnostic core — pluggable `Backend` interface
       (`LangGraphBackend`, `BlockingBackend`), so approval-gate isn't
       tied to one agent framework.
-- [ ] Local web review UI — approve/edit/reject from a browser instead
-      of a blocking terminal `input()` prompt. This is next.
+- [x] Local web review UI (`WebBackend`) — approve/edit/reject from a
+      browser instead of a blocking terminal `input()` prompt.
 - [ ] Slack/email notification when something's waiting for review.
+      This is next — `WebBackend` makes it natural (ping a URL,
+      reviewer clicks through to the inbox).
 - [ ] Per-action policies (e.g. auto-approve low-risk, always pause on
       "delete", route by action type to a specific reviewer).
 - [ ] Hosted dashboard (team accounts, longer-retention Postgres-backed

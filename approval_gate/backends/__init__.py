@@ -9,8 +9,9 @@ from __future__ import annotations
 
 from .base import Backend
 from .blocking import BlockingBackend
+from .web import WebBackend
 
-__all__ = ["Backend", "LangGraphBackend", "BlockingBackend"]
+__all__ = ["Backend", "LangGraphBackend", "BlockingBackend", "WebBackend"]
 
 
 def __getattr__(name: str):
