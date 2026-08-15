@@ -14,6 +14,10 @@ what happened.
 > abstraction, four approval channels (browser, webhook, email, Slack),
 > and per-action policies are all built and tested. A hosted dashboard
 > is the only thing left on the roadmap — see [Roadmap](#roadmap).
+>
+> This README is the pitch and a quick tour. For a task-oriented
+> walkthrough — which channel to pick, full setup for each, policies,
+> troubleshooting — see **[USER_GUIDE.md](USER_GUIDE.md)**.
 
 ```
 agent proposes an action
