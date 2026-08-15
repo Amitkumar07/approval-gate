@@ -136,6 +136,75 @@ def test_decide_on_unknown_audit_id_returns_404():
         receiver_server.shutdown()
 
 
+def test_unknown_get_path_returns_404():
+    receiver_url, received, receiver_server = start_receiver()
+    backend = WebhookBackend(notify_url=receiver_url, port=0)
+    try:
+        try:
+            http_get(f"{backend.url}/not-a-real-path")
+            assert False, "expected HTTPError"
+        except urllib.error.HTTPError as e:
+            assert e.code == 404
+    finally:
+        backend.shutdown()
+        receiver_server.shutdown()
+
+
+def test_unknown_post_path_returns_404():
+    receiver_url, received, receiver_server = start_receiver()
+    backend = WebhookBackend(notify_url=receiver_url, port=0)
+    try:
+        try:
+            http_post(f"{backend.url}/not-a-real-path", {})
+            assert False, "expected HTTPError"
+        except urllib.error.HTTPError as e:
+            assert e.code == 404
+    finally:
+        backend.shutdown()
+        receiver_server.shutdown()
+
+
+def test_malformed_decide_body_returns_400_not_a_crash():
+    receiver_url, received, receiver_server = start_receiver()
+    backend = WebhookBackend(notify_url=receiver_url, port=0)
+    try:
+        req = urllib.request.Request(
+            f"{backend.url}/decide",
+            data=b"{not valid json",
+            headers={"Content-Type": "application/json"},
+        )
+        try:
+            urllib.request.urlopen(req)
+            assert False, "expected HTTPError"
+        except urllib.error.HTTPError as e:
+            assert e.code == 400
+
+        # server must still be alive afterward
+        assert http_get(f"{backend.url}/pending") == []
+    finally:
+        backend.shutdown()
+        receiver_server.shutdown()
+
+
+def test_non_object_decide_body_returns_400():
+    receiver_url, received, receiver_server = start_receiver()
+    backend = WebhookBackend(notify_url=receiver_url, port=0)
+    try:
+        req = urllib.request.Request(
+            f"{backend.url}/decide",
+            data=b'"just a string"',
+            headers={"Content-Type": "application/json"},
+        )
+        try:
+            urllib.request.urlopen(req)
+            assert False, "expected HTTPError"
+        except urllib.error.HTTPError as e:
+            assert e.code == 400
+    finally:
+        backend.shutdown()
+        receiver_server.shutdown()
+
+
 def test_dead_notify_url_does_not_block_or_raise():
     """A webhook that's down must not prevent the approval flow from
     proceeding once a decision eventually arrives some other way --

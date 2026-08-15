@@ -59,6 +59,16 @@ def test_default_backend_is_langgraph_backend():
     assert isinstance(gate.backend, LangGraphBackend)
 
 
+def test_unknown_backends_attribute_raises_attribute_error():
+    import approval_gate.backends as backends_module
+
+    try:
+        backends_module.NotARealBackend
+        assert False, "expected AttributeError"
+    except AttributeError:
+        pass
+
+
 def test_custom_backend_must_implement_wait_for_decision():
     class Incomplete(Backend):
         pass
@@ -67,4 +77,21 @@ def test_custom_backend_must_implement_wait_for_decision():
         Incomplete()
         assert False, "expected TypeError for missing abstract method"
     except TypeError:
+        pass
+
+
+def test_gate_close_closes_the_underlying_audit_log():
+    def reviewer(pending):
+        return {"decision": "approve", "by": "amit"}
+
+    gate = make_gate(BlockingBackend(reviewer))
+    gate.request_approval("send_email", {"to": "a@b.com"}, risk="low")
+    gate.close()
+
+    import sqlite3
+
+    try:
+        gate.audit.get("anything")
+        assert False, "expected the audit log's connection to be closed"
+    except sqlite3.ProgrammingError:
         pass

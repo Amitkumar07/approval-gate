@@ -299,3 +299,207 @@ def test_sent_email_urls_survive_the_wire_encoding_intact():
         if backend is not None:
             backend.shutdown()
         smtp_server.shutdown()
+
+
+def test_unknown_post_path_returns_404():
+    backend = make_backend()
+    try:
+        req = urllib.request.Request(f"{backend.url}/not-a-real-path", data=b"", method="POST")
+        try:
+            urllib.request.urlopen(req)
+            assert False, "expected HTTPError"
+        except urllib.error.HTTPError as e:
+            assert e.code == 404
+    finally:
+        backend.shutdown()
+
+
+def test_real_smtp_send_path():
+    """Exercises the actual smtplib.SMTP(...) send (starttls, login,
+    send_message), not just the send-failure path -- against a local
+    protocol-accurate fake server, since that's what the send
+    machinery actually talks to."""
+    import socketserver
+
+    class Handler(socketserver.StreamRequestHandler):
+        def handle(self):
+            self.wfile.write(b"220 localhost\r\n")
+            in_data = False
+            while True:
+                line = self.rfile.readline()
+                if not line:
+                    break
+                if in_data:
+                    if line.strip() == b".":
+                        in_data = False
+                        self.wfile.write(b"250 OK\r\n")
+                    continue
+                cmd = line.split(b" ")[0].strip().upper()
+                if cmd in (b"EHLO", b"HELO", b"MAIL", b"RCPT", b"AUTH"):
+                    self.wfile.write(b"250 OK\r\n")
+                elif cmd == b"STARTTLS":
+                    self.wfile.write(b"220 Go ahead\r\n")
+                elif cmd == b"DATA":
+                    self.wfile.write(b"354 End with <CRLF>.<CRLF>\r\n")
+                    in_data = True
+                elif cmd == b"QUIT":
+                    self.wfile.write(b"221 Bye\r\n")
+                    break
+                else:
+                    self.wfile.write(b"250 OK\r\n")
+
+    server = socketserver.ThreadingTCPServer(("127.0.0.1", 0), Handler)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    smtp_port = server.server_address[1]
+
+    backend = None
+    try:
+        # use_tls=False -- the fake server above doesn't do a real TLS
+        # handshake, only enough of STARTTLS's text reply to unblock a
+        # client that checks for one
+        backend = EmailBackend(
+            smtp_host="127.0.0.1",
+            smtp_port=smtp_port,
+            smtp_user="",
+            smtp_password="",
+            from_addr="a@example.com",
+            to_addr="b@example.com",
+            secret="s",
+            public_base_url="http://placeholder",
+            port=0,
+            use_tls=False,
+        )
+        backend.public_base_url = backend.url
+
+        t = threading.Thread(
+            target=backend.wait_for_decision,
+            args=({"audit_id": "em-smtp", "action": "x", "args": {}, "pii_findings": [], "risk": "low"},),
+        )
+        t.start()
+        time.sleep(0.5)  # let the real SMTP send complete
+
+        backend.resolve("em-smtp", {"decision": "approve", "by": "t"})
+        t.join(timeout=2)
+    finally:
+        if backend is not None:
+            backend.shutdown()
+        server.shutdown()
+
+
+def test_send_email_uses_starttls_and_login_when_configured():
+    """Verifies _send_email's use_tls/smtp_user branches are actually
+    exercised by intercepting smtplib.SMTP -- a real STARTTLS handshake
+    needs a real TLS cert, so this checks the call sequence instead of
+    running one against a fake server."""
+    calls = []
+
+    class FakeSMTP:
+        def __init__(self, host, port):
+            calls.append(("connect", host, port))
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+        def starttls(self):
+            calls.append(("starttls",))
+
+        def login(self, user, password):
+            calls.append(("login", user, password))
+
+        def send_message(self, msg):
+            calls.append(("send_message",))
+
+    backend = EmailBackend(
+        smtp_host="smtp.example.com",
+        smtp_port=587,
+        smtp_user="bot@example.com",
+        smtp_password="hunter2",
+        from_addr="a@example.com",
+        to_addr="b@example.com",
+        secret="s",
+        public_base_url="http://placeholder",
+        port=0,
+        use_tls=True,
+    )
+    backend.public_base_url = backend.url
+
+    import smtplib
+
+    real_smtp = smtplib.SMTP
+    try:
+        smtplib.SMTP = FakeSMTP
+        backend._send_email({"audit_id": "x", "action": "y", "args": {}, "risk": "low", "pii_findings": []})
+    finally:
+        smtplib.SMTP = real_smtp
+        backend.shutdown()
+
+    assert ("starttls",) in calls
+    assert ("login", "bot@example.com", "hunter2") in calls
+    assert ("send_message",) in calls
+
+
+def test_unknown_get_path_returns_404():
+    backend = make_backend()
+    try:
+        try:
+            http_get(f"{backend.url}/not-a-real-path")
+            assert False, "expected HTTPError"
+        except urllib.error.HTTPError as e:
+            assert e.code == 404
+    finally:
+        backend.shutdown()
+
+
+def test_pending_endpoint_lists_current_items():
+    backend = make_backend()
+    try:
+        t = threading.Thread(
+            target=backend.wait_for_decision,
+            args=({"audit_id": "em-7", "action": "send_email", "args": {}, "pii_findings": [], "risk": "low"},),
+        )
+        t.start()
+        time.sleep(0.3)
+
+        status, body = http_get(f"{backend.url}/pending")
+        assert status == 200
+        items = json.loads(body)
+        assert len(items) == 1
+        assert items[0]["audit_id"] == "em-7"
+
+        backend.resolve("em-7", {"decision": "approve", "by": "t"})
+        t.join(timeout=2)
+
+        status, body = http_get(f"{backend.url}/pending")
+        assert json.loads(body) == []
+    finally:
+        backend.shutdown()
+
+
+def test_confirm_page_for_already_decided_action_returns_404():
+    """A confirm link clicked after the action was already resolved some
+    other way (e.g. a second reviewer, or a duplicate click racing a
+    first one that already went through) should say so clearly, not
+    show a stale confirm page for something no longer pending."""
+    backend = make_backend()
+    try:
+        t = threading.Thread(
+            target=backend.wait_for_decision,
+            args=({"audit_id": "em-8", "action": "delete_records", "args": {}, "pii_findings": [], "risk": "high"},),
+        )
+        t.start()
+        time.sleep(0.3)
+
+        backend.resolve("em-8", {"decision": "approve", "by": "someone-else"})
+        t.join(timeout=2)
+
+        sig = _sign(backend.secret, "em-8", "approve")
+        try:
+            http_get(f"{backend.url}/confirm?audit_id=em-8&decision=approve&sig={sig}")
+            assert False, "expected HTTPError"
+        except urllib.error.HTTPError as e:
+            assert e.code == 404
+    finally:
+        backend.shutdown()

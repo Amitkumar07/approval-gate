@@ -63,6 +63,41 @@ def test_make_id_is_deterministic():
     assert id1 == id2
 
 
+def test_list_pending_returns_only_undecided_rows():
+    log = make_log()
+    pending_id = log.upsert_pending("thread-1", "send_email", {"to": "a@b.com"}, [], risk="low")
+    decided_id = log.upsert_pending("thread-1", "delete_records", {"table": "x"}, [], risk="high")
+    log.record_decision(decided_id, status="approved", decided_by="amit", reason="")
+
+    pending = log.list_pending()
+
+    assert [r.id for r in pending] == [pending_id]
+    assert pending[0].status == "pending"
+
+
+def test_list_all_respects_limit():
+    log = make_log()
+    for i in range(5):
+        log.upsert_pending("thread-1", "send_email", {"to": f"user{i}@example.com"}, [], risk="low")
+
+    assert len(log.list_all(limit=2)) == 2
+    assert len(log.list_all()) == 5
+
+
+def test_close_makes_the_connection_unusable():
+    log = make_log()
+    log.upsert_pending("thread-1", "send_email", {"to": "a@b.com"}, [], risk="low")
+    log.close()
+
+    import sqlite3
+
+    try:
+        log.get("anything")
+        assert False, "expected an error after close()"
+    except sqlite3.ProgrammingError:
+        pass
+
+
 def test_concurrent_writes_from_many_threads_do_not_corrupt_or_error():
     """An agent doing parallel tool calls hits AuditLog from multiple
     threads sharing one connection concurrently. Without a lock around

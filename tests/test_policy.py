@@ -123,3 +123,14 @@ def test_no_policy_always_defers_to_backend():
     gate = make_gate(None, backend=BlockingBackend(reviewer))
     decision = gate.request_approval("read_report", {"id": "1"}, risk="low")
     assert decision.approved is True
+
+
+def test_rule_matches_rejects_on_each_field_independently():
+    pending = {"action": "delete_records", "risk": "high", "pii_findings": []}
+
+    assert Rule(action_name="send_email").matches(pending) is False  # action_name mismatch
+    assert Rule(action_prefix="send_").matches(pending) is False  # prefix mismatch
+    assert Rule(risk="low").matches(pending) is False  # risk mismatch
+    assert Rule(has_pii=True).matches(pending) is False  # has_pii mismatch (empty findings -> False)
+    assert Rule(action_prefix="delete_", risk="high", has_pii=False).matches(pending) is True
+    assert Rule(action_name="delete_records").matches(pending) is True

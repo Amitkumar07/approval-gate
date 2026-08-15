@@ -1,5 +1,6 @@
 import hashlib
 import hmac
+import io
 import json
 import sys
 import threading
@@ -11,7 +12,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from approval_gate.backends.slack import SlackBackend, _verify_slack_signature
+from approval_gate.backends.slack import SlackBackend, _blocks_for, _verify_slack_signature
 
 SIGNING_SECRET = "test-signing-secret"
 
@@ -82,6 +83,11 @@ def test_verify_signature_rejects_stale_timestamp():
     body = b"payload=%7B%7D"
     sig = sign(SIGNING_SECRET, old_ts, body)
     assert not _verify_slack_signature(SIGNING_SECRET, old_ts, body, sig)
+
+
+def test_verify_signature_rejects_non_numeric_timestamp():
+    # a forged/garbage timestamp header, not just an old one
+    assert not _verify_slack_signature(SIGNING_SECRET, "not-a-number", b"payload=%7B%7D", "v0=whatever")
 
 
 def test_interaction_with_bad_signature_returns_400():
@@ -170,6 +176,112 @@ def test_click_on_already_decided_action_returns_200_not_error():
         backend.shutdown()
 
 
+def test_unknown_get_path_returns_404():
+    backend = make_backend()
+    try:
+        try:
+            urllib.request.urlopen(f"{backend.url}/not-a-real-path")
+            assert False, "expected HTTPError"
+        except urllib.error.HTTPError as e:
+            assert e.code == 404
+    finally:
+        backend.shutdown()
+
+
+def test_unknown_post_path_returns_404():
+    backend = make_backend()
+    try:
+        req = urllib.request.Request(f"{backend.url}/not-a-real-path", data=b"", method="POST")
+        try:
+            urllib.request.urlopen(req)
+            assert False, "expected HTTPError"
+        except urllib.error.HTTPError as e:
+            assert e.code == 404
+    finally:
+        backend.shutdown()
+
+
+def test_pending_endpoint_lists_current_items():
+    backend = make_backend()
+    backend._post_message = lambda pending: None
+    try:
+        t = threading.Thread(
+            target=backend.wait_for_decision,
+            args=({"audit_id": "sl-4", "action": "restart_service", "args": {}, "pii_findings": [], "risk": "medium"},),
+        )
+        t.start()
+        time.sleep(0.3)
+
+        with urllib.request.urlopen(f"{backend.url}/pending") as resp:
+            items = json.loads(resp.read())
+        assert len(items) == 1
+        assert items[0]["audit_id"] == "sl-4"
+
+        backend.resolve("sl-4", {"decision": "approve", "by": "t"})
+        t.join(timeout=2)
+
+        with urllib.request.urlopen(f"{backend.url}/pending") as resp:
+            assert json.loads(resp.read()) == []
+    finally:
+        backend.shutdown()
+
+
+def test_unrecognized_action_id_returns_400():
+    backend = make_backend()
+    backend._post_message = lambda pending: None
+    try:
+        t = threading.Thread(
+            target=backend.wait_for_decision,
+            args=({"audit_id": "sl-5", "action": "x", "args": {}, "pii_findings": [], "risk": "low"},),
+        )
+        t.start()
+        time.sleep(0.3)
+
+        try:
+            post_interaction(f"{backend.url}/slack/interactions", interaction_payload("sl-5", "some_other_action_id", "amit"))
+            assert False, "expected HTTPError"
+        except urllib.error.HTTPError as e:
+            assert e.code == 400
+
+        backend.resolve("sl-5", {"decision": "approve", "by": "t"})
+        t.join(timeout=2)
+    finally:
+        backend.shutdown()
+
+
+def test_post_message_failure_does_not_block_wait_for_decision():
+    """Same policy as every other backend -- a failed outbound post
+    (network error, bad token, Slack down) must not prevent the flow
+    from proceeding once a decision arrives some other way. Simulated
+    by intercepting urlopen rather than hitting the real network, so
+    this stays fast and doesn't depend on external connectivity."""
+    backend = make_backend()
+    real_urlopen = urllib.request.urlopen
+
+    def failing_urlopen(req, *args, **kwargs):
+        raise urllib.error.URLError("simulated network failure")
+
+    try:
+        urllib.request.urlopen = failing_urlopen
+        result_holder = {}
+
+        def call():
+            result_holder["decision"] = backend.wait_for_decision(
+                {"audit_id": "sl-6", "action": "x", "args": {}, "pii_findings": [], "risk": "low"}
+            )
+
+        t = threading.Thread(target=call)
+        t.start()
+        time.sleep(0.3)
+
+        assert backend.resolve("sl-6", {"decision": "approve", "by": "manual"})
+        t.join(timeout=2)
+        assert result_holder["decision"]["decision"] == "approve"
+    finally:
+        urllib.request.urlopen = real_urlopen
+        backend.shutdown()
+
+
 def test_malformed_payload_returns_400():
     backend = make_backend()
     try:
@@ -191,4 +303,72 @@ def test_malformed_payload_returns_400():
         except urllib.error.HTTPError as e:
             assert e.code == 400
     finally:
+        backend.shutdown()
+
+
+def test_blocks_for_includes_action_risk_and_buttons():
+    blocks = _blocks_for(
+        {
+            "audit_id": "sl-blocks",
+            "action": "delete_records",
+            "args": {"table": "support_tickets"},
+            "pii_findings": [],
+            "risk": "high",
+        }
+    )
+    section_text = blocks[0]["text"]["text"]
+    assert "delete_records" in section_text
+    assert "high" in section_text
+    assert "support_tickets" in section_text
+
+    buttons = blocks[1]["elements"]
+    assert {b["action_id"] for b in buttons} == {"approval_gate_approve", "approval_gate_reject"}
+    assert all(b["value"] == "sl-blocks" for b in buttons)
+    assert blocks[1]["block_id"] == "approval-gate:sl-blocks"
+
+
+def test_blocks_for_flags_pii_findings():
+    blocks = _blocks_for(
+        {
+            "audit_id": "sl-blocks-2",
+            "action": "send_email",
+            "args": {"to": "a@b.com"},
+            "pii_findings": [{"type": "email", "field": "to", "value_masked": "a***b", "source": "regex"}],
+            "risk": "medium",
+        }
+    )
+    assert "1 sensitive field" in blocks[0]["text"]["text"]
+
+
+def test_blocks_for_handles_no_args():
+    blocks = _blocks_for({"audit_id": "x", "action": "noop", "args": {}, "pii_findings": [], "risk": "low"})
+    assert "(no arguments)" in blocks[0]["text"]["text"]
+
+
+def test_post_message_calls_slacks_chat_postmessage_with_bot_token():
+    """Exercises _post_message's actual request-building (not stubbed
+    out, unlike the interaction tests above) by intercepting
+    urllib.request.urlopen -- confirms the real code path sends the
+    right URL, auth header, and payload shape, without needing a real
+    Slack workspace."""
+    backend = make_backend()
+    captured = {}
+    real_urlopen = urllib.request.urlopen
+
+    def fake_urlopen(req, *args, **kwargs):
+        captured["url"] = req.full_url
+        captured["headers"] = {k.lower(): v for k, v in req.headers.items()}
+        captured["body"] = json.loads(req.data)
+        return io.BytesIO(b'{"ok": true}')
+
+    try:
+        urllib.request.urlopen = fake_urlopen
+        backend._post_message({"audit_id": "sl-post", "action": "send_email", "args": {}, "pii_findings": [], "risk": "low"})
+
+        assert captured["url"] == "https://slack.com/api/chat.postMessage"
+        assert captured["headers"]["authorization"] == "Bearer xoxb-fake-token-not-called-in-tests"
+        assert captured["body"]["channel"] == "#approvals"
+        assert len(captured["body"]["blocks"]) == 2
+    finally:
+        urllib.request.urlopen = real_urlopen
         backend.shutdown()

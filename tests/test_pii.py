@@ -43,3 +43,15 @@ def test_masking_does_not_reveal_full_value():
     email_finding = next(f for f in findings if f["type"] == "email")
     assert "amit.kulkarni@example.com" not in email_finding["value_masked"]
     assert "*" in email_finding["value_masked"]
+
+
+def test_detects_ssn_shaped_number():
+    assert "ssn_like" in types_found({"body": "SSN on file: 123-45-6789"})
+
+
+def test_short_value_is_fully_masked_not_partially():
+    # _mask() keeps `keep` chars from each end -- for a value too short
+    # for that to leave anything hidden, it must fall back to masking
+    # the whole thing rather than showing most of a short secret.
+    assert pii._mask("ab") == "**"
+    assert pii._mask("abcd", keep=2) == "****"  # len == keep*2 -- still the short-value branch

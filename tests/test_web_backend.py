@@ -130,3 +130,27 @@ def test_non_object_json_body_returns_400():
             assert e.code == 400
     finally:
         backend.shutdown()
+
+
+def test_unknown_get_path_returns_404():
+    backend = make_backend()
+    try:
+        try:
+            http_get(backend.url + "/not-a-real-path")
+            assert False, "expected HTTPError"
+        except urllib.error.HTTPError as e:
+            assert e.code == 404
+    finally:
+        backend.shutdown()
+
+
+def test_unknown_post_path_returns_404():
+    backend = make_backend()
+    try:
+        try:
+            http_post(backend.url + "/not-a-real-path", {})
+            assert False, "expected HTTPError"
+        except urllib.error.HTTPError as e:
+            assert e.code == 404
+    finally:
+        backend.shutdown()
