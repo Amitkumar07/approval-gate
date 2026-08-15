@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "approval-gate"
 version = "0.1.0"
-description = "A drop-in approval gate and audit trail for LangGraph agents."
+description = "A drop-in approval gate and audit trail for AI agents -- works with LangGraph, or with no framework at all."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }

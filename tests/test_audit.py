@@ -1,3 +1,4 @@
+import multiprocessing
 import sys
 import tempfile
 import threading
@@ -11,6 +12,15 @@ from approval_gate.audit import AuditLog, make_id
 def make_log():
     tmp = tempfile.NamedTemporaryFile(suffix=".db", delete=False)
     return AuditLog(tmp.name)
+
+
+def _write_from_subprocess(db_path: str, worker_id: int) -> None:
+    """Module-level (picklable) so multiprocessing can target it -- a
+    closure won't work with the default 'spawn'/'fork' start methods."""
+    log = AuditLog(db_path)
+    rid = log.upsert_pending(f"proc-{worker_id}", "send_email", {"to": f"user{worker_id}@example.com"}, [], risk="low")
+    log.record_decision(rid, status="approved", decided_by=f"reviewer-{worker_id}", reason="")
+    log.close()
 
 
 def test_upsert_pending_then_get():
@@ -125,4 +135,38 @@ def test_concurrent_writes_from_many_threads_do_not_corrupt_or_error():
     assert errors == [], f"concurrent access raised: {errors}"
     records = log.list_all()
     assert len(records) == 20
+    assert all(r.status == "approved" for r in records)
+
+
+def test_wal_mode_and_busy_timeout_are_active():
+    log = make_log()
+    mode = log._conn.execute("PRAGMA journal_mode").fetchone()[0]
+    timeout = log._conn.execute("PRAGMA busy_timeout").fetchone()[0]
+    assert mode.lower() == "wal"
+    assert timeout > 0
+
+
+def test_concurrent_writes_from_separate_processes_do_not_corrupt_or_error():
+    """Different from the many-threads test above: this is what WAL mode
+    + busy_timeout specifically address -- multiple separate OS processes
+    (not just threads in one process, which the lock in AuditLog.__init__
+    already covered) writing to the same db_path concurrently, the way
+    running more than one worker process of an app would."""
+    tmp = tempfile.NamedTemporaryFile(suffix=".db", delete=False)
+    db_path = tmp.name
+
+    AuditLog(db_path).close()  # create the schema before workers race to open it
+
+    ctx = multiprocessing.get_context("spawn")
+    processes = [ctx.Process(target=_write_from_subprocess, args=(db_path, i)) for i in range(8)]
+    for p in processes:
+        p.start()
+    for p in processes:
+        p.join(timeout=15)
+
+    assert all(p.exitcode == 0 for p in processes), [p.exitcode for p in processes]
+
+    log = AuditLog(db_path)
+    records = log.list_all()
+    assert len(records) == 8
     assert all(r.status == "approved" for r in records)

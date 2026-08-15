@@ -17,7 +17,10 @@ what happened.
 >
 > This README is the pitch and a quick tour. For a task-oriented
 > walkthrough — which channel to pick, full setup for each, policies,
-> troubleshooting — see **[USER_GUIDE.md](USER_GUIDE.md)**.
+> troubleshooting — see **[USER_GUIDE.md](USER_GUIDE.md)**. Running any
+> of the network-facing backends (Email, Slack, Webhook) somewhere
+> real? Read **[SECURITY.md](SECURITY.md)** first — secrets handling
+> and why they need a reverse proxy in front.
 
 ```
 agent proposes an action

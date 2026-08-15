@@ -492,6 +492,18 @@ is supported and tested — `AuditLog` locks around every access
 specifically to make this safe (see `audit.py`). If you're doing
 parallel tool calls from an agent, this is fine.
 
+**Running more than one process against the same `db_path`.** Also
+supported — `AuditLog` uses SQLite in WAL mode with a `busy_timeout`
+specifically so multiple OS processes on one machine can write to the
+same file concurrently. This is not a distributed database; see
+[SECURITY.md](SECURITY.md) for the real ceiling if you're running a
+horizontally-scaled deployment.
+
+**Deploying Email/Slack/Webhook backends somewhere real.** See
+[SECURITY.md](SECURITY.md) — secrets handling, and why these need a
+reverse proxy in front rather than exposing `http.server` directly to
+the internet.
+
 ## 10. Reference: `request_approval` and `Decision`
 
 ```python

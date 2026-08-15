@@ -1,0 +1,1533 @@
+<title>approval-gate &middot; documentation</title>
+<style>
+  :root {
+    --bg: #fbfbfd;
+    --surface: #ffffff;
+    --surface-sunken: #f2f3f7;
+    --surface-raised: #ffffff;
+    --border: #e5e6ec;
+    --border-strong: #d3d5df;
+    --text: #14151a;
+    --text-muted: #5c5f6d;
+    --text-faint: #9598a6;
+
+    --accent: #5b5cf0;
+    --accent-2: #8a5cf0;
+    --accent-text: #ffffff;
+    --accent-dim: #eeedfe;
+    --accent-ring: rgba(91, 92, 240, 0.35);
+    --focus-ring: #5b5cf0;
+
+    --risk-low-fg: #17824f;
+    --risk-low-bg: #e4f6ec;
+    --risk-medium-fg: #a15c07;
+    --risk-medium-bg: #fbf0dc;
+    --risk-high-fg: #c22b3e;
+    --risk-high-bg: #fce7ea;
+
+    --code-bg: #16171d;
+    --code-text: #eef0f7;
+    --code-comment: #7c7f92;
+    --code-string: #7ee0a8;
+    --code-key: #7fb0f5;
+
+    --shadow-sm: 0 1px 2px rgba(20, 21, 26, 0.05);
+    --shadow-md: 0 4px 16px -4px rgba(20, 21, 26, 0.09), 0 1px 2px rgba(20, 21, 26, 0.06);
+    --shadow-lg: 0 16px 40px -12px rgba(20, 21, 26, 0.18);
+
+    --font-display: "SF Pro Display", -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --font-ui: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-mono: ui-monospace, "SF Mono", "Cascadia Code", "Roboto Mono", Menlo, Consolas, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0b0c10;
+      --surface: #16171d;
+      --surface-sunken: #1c1e26;
+      --surface-raised: #1c1e26;
+      --border: #282a35;
+      --border-strong: #383b49;
+      --text: #f1f2f6;
+      --text-muted: #a6a9ba;
+      --text-faint: #686c7d;
+
+      --accent: #8b8cff;
+      --accent-2: #b48bff;
+      --accent-text: #10111a;
+      --accent-dim: #232244;
+      --accent-ring: rgba(139, 140, 255, 0.35);
+      --focus-ring: #8b8cff;
+
+      --risk-low-fg: #6fd39d;
+      --risk-low-bg: #12251c;
+      --risk-medium-fg: #eab35c;
+      --risk-medium-bg: #2b2213;
+      --risk-high-fg: #f3899a;
+      --risk-high-bg: #2c1720;
+
+      --code-bg: #0a0a0e;
+      --code-text: #eef0f7;
+      --code-comment: #686c7d;
+      --code-string: #7ee0a8;
+      --code-key: #7fb0f5;
+
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 20px -4px rgba(0, 0, 0, 0.45), 0 1px 3px rgba(0, 0, 0, 0.35);
+      --shadow-lg: 0 20px 48px -16px rgba(0, 0, 0, 0.6);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #0b0c10;
+    --surface: #16171d;
+    --surface-sunken: #1c1e26;
+    --surface-raised: #1c1e26;
+    --border: #282a35;
+    --border-strong: #383b49;
+    --text: #f1f2f6;
+    --text-muted: #a6a9ba;
+    --text-faint: #686c7d;
+
+    --accent: #8b8cff;
+    --accent-2: #b48bff;
+    --accent-text: #10111a;
+    --accent-dim: #232244;
+    --accent-ring: rgba(139, 140, 255, 0.35);
+    --focus-ring: #8b8cff;
+
+    --risk-low-fg: #6fd39d;
+    --risk-low-bg: #12251c;
+    --risk-medium-fg: #eab35c;
+    --risk-medium-bg: #2b2213;
+    --risk-high-fg: #f3899a;
+    --risk-high-bg: #2c1720;
+
+    --code-bg: #0a0a0e;
+    --code-text: #eef0f7;
+    --code-comment: #686c7d;
+    --code-string: #7ee0a8;
+    --code-key: #7fb0f5;
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 20px -4px rgba(0, 0, 0, 0.45), 0 1px 3px rgba(0, 0, 0, 0.35);
+    --shadow-lg: 0 20px 48px -16px rgba(0, 0, 0, 0.6);
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body { height: 100%; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-ui);
+    font-size: 15.5px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection { background: var(--accent-ring); }
+
+  /* ---- shell layout: sidebar + content ---- */
+
+  .shell {
+    display: grid;
+    grid-template-columns: 272px 1fr;
+    min-height: 100vh;
+  }
+
+  @media (max-width: 860px) {
+    .shell { grid-template-columns: 1fr; }
+    .sidebar { position: static; height: auto; border-right: none; border-bottom: 1px solid var(--border); }
+  }
+
+  .sidebar {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    border-right: 1px solid var(--border);
+    padding: 1.5rem 1.1rem 3rem;
+    background: var(--surface);
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 1.02rem;
+    letter-spacing: -0.01em;
+    padding: 0.3rem 0.5rem 0.15rem;
+    margin-bottom: 0.2rem;
+  }
+
+  .brand .mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: #fff;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    font-weight: 700;
+    box-shadow: var(--shadow-sm);
+    flex: none;
+  }
+
+  .tagline {
+    font-size: 0.78rem;
+    color: var(--text-faint);
+    padding: 0 0.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .nav-group { margin-bottom: 1.6rem; }
+
+  .nav-label {
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-faint);
+    padding: 0 0.6rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .nav-link {
+    position: relative;
+    display: block;
+    padding: 0.45rem 0.6rem 0.45rem 0.85rem;
+    margin: 1px 0;
+    border-radius: 8px;
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 0.87rem;
+    cursor: pointer;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+    font-family: var(--font-ui);
+    transition: background-color 0.12s ease, color 0.12s ease;
+  }
+
+  .nav-link::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 0;
+    border-radius: 2px;
+    background: var(--accent);
+    transition: height 0.15s ease;
+  }
+
+  .nav-link:hover { background: var(--surface-sunken); color: var(--text); }
+  .nav-link.active { background: var(--accent-dim); color: var(--accent); font-weight: 650; }
+  .nav-link.active::before { height: 18px; }
+  .nav-link:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: -2px; }
+
+  .content {
+    padding: 2.75rem 3.25rem 7rem;
+    max-width: 900px;
+  }
+
+  @media (max-width: 640px) {
+    .content { padding: 1.5rem 1.25rem 4rem; }
+  }
+
+  .page { display: none; }
+  .page.active { display: block; animation: fade-in 0.2s ease; }
+
+  @keyframes fade-in {
+    from { opacity: 0; transform: translateY(3px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--accent);
+    margin-bottom: 0.75rem;
+  }
+
+  h1 {
+    font-family: var(--font-display);
+    font-size: 2.35rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    margin: 0 0 0.7rem;
+    text-wrap: balance;
+    background: linear-gradient(120deg, var(--text) 55%, var(--accent-2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .lede {
+    font-size: 1.1rem;
+    color: var(--text-muted);
+    max-width: 62ch;
+    margin: 0 0 2.75rem;
+  }
+
+  h2 {
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    font-weight: 750;
+    letter-spacing: -0.015em;
+    margin: 3rem 0 1.1rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border);
+  }
+
+  h2:first-of-type { border-top: none; padding-top: 0; margin-top: 0; }
+
+  h3 {
+    font-family: var(--font-display);
+    font-size: 1.08rem;
+    font-weight: 700;
+    margin: 1.9rem 0 0.75rem;
+  }
+
+  p { max-width: 68ch; margin: 0 0 1.05rem; }
+  ul, ol { max-width: 66ch; margin: 0 0 1.05rem; padding-left: 1.35rem; }
+  li { margin: 0.35rem 0; }
+
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.86em;
+    background: var(--surface-sunken);
+    border: 1px solid var(--border);
+    padding: 0.08em 0.42em;
+    border-radius: 5px;
+  }
+
+  pre {
+    background: var(--code-bg);
+    color: var(--code-text);
+    border-radius: 12px;
+    padding: 1.15rem 1.3rem;
+    overflow-x: auto;
+    margin: 0 0 1.4rem;
+    font-size: 0.84rem;
+    line-height: 1.6;
+    box-shadow: var(--shadow-md);
+  }
+
+  pre code {
+    background: none;
+    border: none;
+    padding: 0;
+    color: inherit;
+  }
+
+  .cmt { color: var(--code-comment); }
+  .str { color: var(--code-string); }
+  .key { color: var(--code-key); }
+
+  .callout {
+    position: relative;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 1rem 1.2rem 1rem 1.4rem;
+    margin: 0 0 1.4rem;
+    font-size: 0.91rem;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .callout::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.6rem;
+    bottom: 0.6rem;
+    width: 3px;
+    border-radius: 2px;
+    background: linear-gradient(var(--accent), var(--accent-2));
+  }
+
+  .callout.warn::before { background: var(--risk-high-fg); }
+  .callout .callout-title {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-weight: 700;
+    font-size: 0.76rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.35rem;
+    color: var(--accent);
+  }
+  .callout.warn .callout-title { color: var(--risk-high-fg); }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0 0 1.6rem;
+    font-size: 0.88rem;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+  }
+
+  th, td {
+    text-align: left;
+    padding: 0.6rem 0.85rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  tr:last-child td { border-bottom: none; }
+
+  th {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-faint);
+    font-weight: 700;
+    background: var(--surface-sunken);
+  }
+
+  tbody tr { transition: background-color 0.1s ease; }
+  tbody tr:hover { background: var(--surface-sunken); }
+
+  td code { white-space: nowrap; }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+  }
+
+  .badge.low { background: var(--risk-low-bg); color: var(--risk-low-fg); }
+  .badge.medium { background: var(--risk-medium-bg); color: var(--risk-medium-fg); }
+  .badge.high { background: var(--risk-high-bg); color: var(--risk-high-fg); }
+  .badge.neutral { background: var(--accent-dim); color: var(--accent); }
+
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 1rem;
+    margin: 0 0 1.6rem;
+  }
+
+  .card {
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.15rem 1.25rem;
+    background: var(--surface);
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow 0.15s ease, transform 0.15s ease, border-color 0.15s ease;
+  }
+
+  .card:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+    border-color: var(--border-strong);
+  }
+
+  .card h4 {
+    font-family: var(--font-mono);
+    font-size: 0.92rem;
+    margin: 0 0 0.5rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  .card p { font-size: 0.86rem; color: var(--text-muted); margin: 0; max-width: none; }
+
+  .figure {
+    margin: 0 0 1.9rem;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: var(--surface);
+    padding: 1.5rem 1.5rem 1.1rem;
+    box-shadow: var(--shadow-md);
+  }
+
+  .figure svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-width: 100%;
+  }
+
+  .figure figcaption {
+    font-size: 0.83rem;
+    color: var(--text-muted);
+    margin-top: 0.9rem;
+    padding-top: 0.9rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .topbar {
+    position: fixed;
+    top: 0;
+    right: 0;
+    left: 272px;
+    z-index: 20;
+    display: flex;
+    justify-content: flex-end;
+    padding: 1rem 1.5rem;
+    pointer-events: none;
+  }
+
+  @media (max-width: 860px) { .topbar { left: 0; } }
+
+  .theme-toggle {
+    pointer-events: auto;
+    display: flex;
+    gap: 0.2rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.22rem;
+    box-shadow: var(--shadow-md);
+  }
+
+  .theme-toggle button {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    padding: 0.32rem 0.6rem;
+    border-radius: 7px;
+    border: none;
+    background: none;
+    color: var(--text-faint);
+    cursor: pointer;
+    transition: background-color 0.12s ease, color 0.12s ease;
+  }
+
+  .theme-toggle button:hover { color: var(--text); }
+  .theme-toggle button.active { background: var(--accent); color: var(--accent-text); }
+
+  .kv {
+    display: grid;
+    grid-template-columns: minmax(0, 34%) 1fr;
+    gap: 0.5rem 1rem;
+    margin: 0 0 1.6rem;
+    font-size: 0.88rem;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.9rem 1.1rem;
+    background: var(--surface);
+  }
+
+  .kv dt { font-family: var(--font-mono); color: var(--accent); font-weight: 600; }
+  .kv dd { margin: 0; color: var(--text-muted); }
+
+  /* ---- hero (overview page only) ---- */
+
+  .hero {
+    position: relative;
+    margin: -0.5rem 0 2.5rem;
+    padding: 2.5rem 2.25rem;
+    border-radius: 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+  }
+
+  .hero::before {
+    content: "";
+    position: absolute;
+    inset: -40% -20% auto auto;
+    width: 55%;
+    height: 140%;
+    background: radial-gradient(circle, var(--accent-ring), transparent 70%);
+    pointer-events: none;
+  }
+
+  .hero-inner { position: relative; }
+  .hero-inner .lede { margin-bottom: 0; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+
+<div class="topbar">
+  <div class="theme-toggle">
+    <button id="theme-light" onclick="setTheme('light')">light</button>
+    <button id="theme-dark" onclick="setTheme('dark')">dark</button>
+    <button id="theme-system" onclick="setTheme('system')" class="active">auto</button>
+  </div>
+</div>
+
+<div class="shell">
+  <nav class="sidebar" id="sidebar">
+    <div class="brand"><span class="mark">&#9673;</span>approval-gate</div>
+    <div class="tagline">documentation</div>
+
+    <div class="nav-group">
+      <div class="nav-label">Get started</div>
+      <button class="nav-link" data-page="overview">Overview</button>
+      <button class="nav-link" data-page="architecture">Architecture</button>
+      <button class="nav-link" data-page="quickstart">Quickstart</button>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-label">Channels</div>
+      <button class="nav-link" data-page="ch-web">Browser</button>
+      <button class="nav-link" data-page="ch-webhook">Webhook</button>
+      <button class="nav-link" data-page="ch-email">Email</button>
+      <button class="nav-link" data-page="ch-slack">Slack</button>
+      <button class="nav-link" data-page="ch-langgraph">LangGraph</button>
+      <button class="nav-link" data-page="ch-blocking">Plain Python</button>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-label">Components</div>
+      <button class="nav-link" data-page="cmp-core">ApprovalGate</button>
+      <button class="nav-link" data-page="cmp-audit">Audit log</button>
+      <button class="nav-link" data-page="cmp-pii">PII scanning</button>
+      <button class="nav-link" data-page="cmp-policy">Policies</button>
+      <button class="nav-link" data-page="cmp-notifiers">Notifiers</button>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-label">Reference</div>
+      <button class="nav-link" data-page="ref-api">API reference</button>
+      <button class="nav-link" data-page="ref-troubleshoot">Troubleshooting</button>
+    </div>
+  </nav>
+
+  <main class="content" id="content">
+
+    <!-- ===================== OVERVIEW ===================== -->
+    <div class="page" id="page-overview">
+      <div class="hero">
+        <div class="hero-inner">
+          <div class="eyebrow">&#9673; Documentation</div>
+          <h1>approval-gate</h1>
+          <p class="lede">
+            A drop-in approval gate and audit trail for AI agents. Before your
+            agent sends an email, deletes a record, or calls an API it shouldn't
+            call unsupervised, approval-gate pauses it, shows a human exactly
+            what it's about to do, flags anything sensitive in the payload, and
+            waits for approve / edit / reject &mdash; with a permanent record of
+            what happened.
+          </p>
+        </div>
+      </div>
+
+      <h2>Why this exists</h2>
+      <p>
+        LangGraph already gives you <code>interrupt()</code> for
+        human-in-the-loop control &mdash; that part is free and built in.
+        What's missing is everything <em>around</em> it: a place to log what
+        was proposed, a way to flag sensitive data before a human sees it
+        (or before it sits in a log file), and a consistent pattern so every
+        tool in a codebase pauses the same way instead of every team
+        hand-rolling it slightly differently.
+      </p>
+      <div class="callout">
+        <div class="callout-title">What this is not</div>
+        Not a full observability platform, not an MCP vulnerability scanner,
+        not an enterprise compliance suite. This sits alongside those tools,
+        it doesn't replace them.
+      </div>
+
+      <h2>The five pieces</h2>
+      <div class="card-grid">
+        <div class="card">
+          <h4>ApprovalGate</h4>
+          <p>The object you call. Scans args, checks policy, waits on a backend, writes the audit record.</p>
+        </div>
+        <div class="card">
+          <h4>Backend</h4>
+          <p>How the pause happens and how a decision comes back &mdash; browser, Slack, email, webhook, LangGraph, or a plain callback.</p>
+        </div>
+        <div class="card">
+          <h4>Policy</h4>
+          <p>Optional. Skips the human step for low-risk actions, or routes high-risk ones to a specific reviewer.</p>
+        </div>
+        <div class="card">
+          <h4>PII scanner</h4>
+          <p>Regex + optional Presidio. Masks emails, cards, secrets, and more before anything is shown or logged.</p>
+        </div>
+        <div class="card">
+          <h4>Audit log</h4>
+          <p>SQLite, append-only. Every proposal, decision, and result &mdash; nothing is ever deleted.</p>
+        </div>
+      </div>
+
+      <h2>Where to go next</h2>
+      <ul>
+        <li><a onclick="showPage('architecture')">Architecture</a> &mdash; how a request actually flows through the system, with diagrams.</li>
+        <li><a onclick="showPage('quickstart')">Quickstart</a> &mdash; running code in under a minute.</li>
+        <li>Pick a channel in the sidebar under <strong>Channels</strong> for full setup of whichever one matches your team.</li>
+      </ul>
+    </div>
+
+    <!-- ===================== ARCHITECTURE ===================== -->
+    <div class="page" id="page-architecture">
+      <div class="eyebrow">Get started</div>
+      <h1>Architecture</h1>
+      <p class="lede">
+        Two diagrams: what happens on every single call to
+        <code>request_approval()</code>, and how that generalizes across
+        the different ways a decision can come back.
+      </p>
+
+      <h2>The request lifecycle</h2>
+      <p>
+        Every call scans, logs a pending row, then optionally short-circuits
+        via policy before ever reaching a human. This is the one flow that's
+        identical no matter which backend or policy you're using.
+      </p>
+
+      <figure class="figure">
+        <svg viewBox="0 0 960 420" role="img" aria-label="Flow diagram: request_approval scans args for PII, writes a pending audit row, then either a policy auto-decides or a backend pauses for a human; every branch ends by writing the final decision to the audit log.">
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+            </marker>
+          </defs>
+          <g fill="none" stroke="currentColor" stroke-width="1.5" font-family="ui-monospace, monospace" font-size="12">
+
+            <!-- start -->
+            <rect x="20" y="185" width="130" height="50" rx="8"/>
+            <text x="85" y="205" text-anchor="middle" stroke="none" fill="currentColor" font-weight="600">request_</text>
+            <text x="85" y="220" text-anchor="middle" stroke="none" fill="currentColor" font-weight="600">approval()</text>
+
+            <line x1="150" y1="210" x2="188" y2="210" marker-end="url(#arrow)"/>
+
+            <!-- pii scan -->
+            <rect x="190" y="185" width="130" height="50" rx="8"/>
+            <text x="255" y="205" text-anchor="middle" stroke="none" fill="currentColor">pii.scan(args)</text>
+            <text x="255" y="220" text-anchor="middle" stroke="none" fill="currentColor" font-size="10" opacity="0.7">mask findings</text>
+
+            <line x1="320" y1="210" x2="358" y2="210" marker-end="url(#arrow)"/>
+
+            <!-- audit upsert -->
+            <rect x="360" y="185" width="140" height="50" rx="8"/>
+            <text x="430" y="205" text-anchor="middle" stroke="none" fill="currentColor">audit.upsert_</text>
+            <text x="430" y="220" text-anchor="middle" stroke="none" fill="currentColor">pending()</text>
+
+            <line x1="500" y1="210" x2="538" y2="210" marker-end="url(#arrow)"/>
+
+            <!-- policy diamond -->
+            <polygon points="620,160 690,210 620,260 550,210" />
+            <text x="620" y="206" text-anchor="middle" stroke="none" fill="currentColor">policy</text>
+            <text x="620" y="221" text-anchor="middle" stroke="none" fill="currentColor">matched?</text>
+
+            <!-- branch: yes -> auto decide (up) -->
+            <line x1="620" y1="160" x2="620" y2="90" marker-end="url(#arrow)"/>
+            <text x="632" y="120" stroke="none" fill="currentColor" font-size="11">yes</text>
+            <rect x="530" y="40" width="180" height="50" rx="8"/>
+            <text x="620" y="60" text-anchor="middle" stroke="none" fill="currentColor">auto-approve /</text>
+            <text x="620" y="75" text-anchor="middle" stroke="none" fill="currentColor">auto-reject</text>
+
+            <!-- branch: no -> backend (down) -->
+            <line x1="620" y1="260" x2="620" y2="330" marker-end="url(#arrow)"/>
+            <text x="632" y="300" stroke="none" fill="currentColor" font-size="11">no</text>
+            <rect x="530" y="332" width="180" height="60" rx="8"/>
+            <text x="620" y="356" text-anchor="middle" stroke="none" fill="currentColor" font-weight="600">backend.wait_for_</text>
+            <text x="620" y="371" text-anchor="middle" stroke="none" fill="currentColor" font-weight="600">decision()</text>
+            <text x="620" y="385" text-anchor="middle" stroke="none" fill="currentColor" font-size="10" opacity="0.7">blocks until decided</text>
+
+            <!-- both converge -> record_decision, via a shared vertical bus -->
+            <line x1="710" y1="65" x2="800" y2="65"/>
+            <line x1="710" y1="362" x2="800" y2="362"/>
+            <line x1="800" y1="65" x2="800" y2="362"/>
+            <line x1="800" y1="210" x2="838" y2="210" marker-end="url(#arrow)"/>
+
+            <rect x="840" y="185" width="105" height="50" rx="8"/>
+            <text x="892" y="205" text-anchor="middle" stroke="none" fill="currentColor" font-weight="700">record_</text>
+            <text x="892" y="220" text-anchor="middle" stroke="none" fill="currentColor" font-weight="700">decision()</text>
+
+          </g>
+        </svg>
+        <figcaption>
+          Both the policy short-circuit and the human-review path converge on the same
+          <code>record_decision()</code> call &mdash; the audit log can't distinguish "decided by policy" from
+          "decided by human" except by reading <code>decided_by</code>, which is exactly what makes the two paths
+          equally traceable.
+        </figcaption>
+      </figure>
+
+      <h2>How a decision comes back</h2>
+      <p>
+        <code>backend.wait_for_decision()</code> blocks the calling thread. What unblocks it is different per
+        channel, but four of the six backends (everything except LangGraph and the plain-Python callback) share
+        the same underlying shape: register a per-request queue, notify some external system, block on the
+        queue, and let an HTTP handler running on a different thread deliver the result.
+      </p>
+
+      <figure class="figure">
+        <svg viewBox="0 0 820 300" role="img" aria-label="Sequence diagram: the calling thread registers a queue and blocks; a notify step (webhook POST, email, Slack message) reaches a human; the human's action arrives as an HTTP request on a separate thread, which resolves the queue and unblocks the caller.">
+          <defs>
+            <marker id="arrow2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+            </marker>
+          </defs>
+          <g font-family="ui-monospace, monospace" font-size="12">
+            <!-- lifelines -->
+            <g stroke="currentColor" stroke-width="1" opacity="0.35">
+              <line x1="90" y1="55" x2="90" y2="270"/>
+              <line x1="330" y1="55" x2="330" y2="270"/>
+              <line x1="570" y1="55" x2="570" y2="270"/>
+              <line x1="740" y1="55" x2="740" y2="270"/>
+            </g>
+            <g fill="none" stroke="currentColor" stroke-width="1.5">
+              <rect x="30" y="20" width="120" height="34" rx="6"/>
+              <rect x="270" y="20" width="120" height="34" rx="6"/>
+              <rect x="500" y="20" width="140" height="34" rx="6"/>
+              <rect x="680" y="20" width="120" height="34" rx="6"/>
+            </g>
+            <g stroke="none" fill="currentColor" text-anchor="middle" font-weight="600">
+              <text x="90" y="41">caller thread</text>
+              <text x="330" y="41">backend</text>
+              <text x="570" y="41">channel</text>
+              <text x="740" y="41">reviewer</text>
+            </g>
+
+            <!-- register -->
+            <line x1="90" y1="80" x2="326" y2="80" stroke="currentColor" stroke-width="1.5" marker-end="url(#arrow2)"/>
+            <text x="210" y="74" text-anchor="middle" fill="currentColor">_register(audit_id)</text>
+
+            <!-- notify -->
+            <line x1="330" y1="105" x2="566" y2="105" stroke="currentColor" stroke-width="1.5" marker-end="url(#arrow2)"/>
+            <text x="450" y="99" text-anchor="middle" fill="currentColor">notify (POST / send / post message)</text>
+
+            <!-- reviewer sees it -->
+            <line x1="570" y1="130" x2="736" y2="130" stroke="currentColor" stroke-width="1.5" marker-end="url(#arrow2)"/>
+            <text x="655" y="124" text-anchor="middle" fill="currentColor">shown to reviewer</text>
+
+            <!-- caller blocks -->
+            <rect x="83" y="90" width="14" height="150" fill="currentColor" opacity="0.12"/>
+            <text x="90" y="205" text-anchor="middle" fill="currentColor" transform="rotate(-90 90 205)" font-size="11" opacity="0.8">blocked on queue.get()</text>
+
+            <!-- click / reply -->
+            <line x1="740" y1="185" x2="574" y2="185" stroke="currentColor" stroke-width="1.5" marker-end="url(#arrow2)"/>
+            <text x="655" y="179" text-anchor="middle" fill="currentColor">click / reply</text>
+
+            <!-- decide POST on new thread -->
+            <line x1="570" y1="210" x2="334" y2="210" stroke="currentColor" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arrow2)"/>
+            <text x="450" y="204" text-anchor="middle" fill="currentColor">POST /decide  (new HTTP thread)</text>
+
+            <!-- resolve -->
+            <line x1="330" y1="240" x2="94" y2="240" stroke="currentColor" stroke-width="1.5" marker-end="url(#arrow2)"/>
+            <text x="210" y="234" text-anchor="middle" fill="currentColor">resolve() &rarr; queue unblocks</text>
+          </g>
+        </svg>
+        <figcaption>
+          The dashed arrow is the important one: it arrives on a request thread the HTTP server spawned, not the
+          thread that called <code>request_approval()</code>. <code>_PendingQueueBackend</code> exists specifically
+          to make that hand-off safe &mdash; see <a onclick="showPage('cmp-audit')">Audit log</a> for the
+          concurrency bug this pattern was built to stop from recurring.
+        </figcaption>
+      </figure>
+
+      <h2>Package layout</h2>
+      <div class="kv">
+        <dt>approval_gate/core.py</dt><dd>ApprovalGate &mdash; orchestrates scan &rarr; policy &rarr; backend &rarr; audit</dd>
+        <dt>approval_gate/audit.py</dt><dd>AuditLog &mdash; SQLite, deterministic IDs, thread-safe via a lock</dd>
+        <dt>approval_gate/pii.py</dt><dd>Regex + optional Presidio scanning, masking</dd>
+        <dt>approval_gate/policy.py</dt><dd>Rule, RulePolicy &mdash; auto-approve / auto-reject / route</dd>
+        <dt>approval_gate/notifiers.py</dt><dd>SlackNotifier and the Notifier callable shape</dd>
+        <dt>approval_gate/backends/</dt><dd>Backend + six implementations, and the shared queue plumbing</dd>
+      </div>
+    </div>
+
+    <!-- ===================== QUICKSTART ===================== -->
+    <div class="page" id="page-quickstart">
+      <div class="eyebrow">Get started</div>
+      <h1>Quickstart</h1>
+      <p class="lede">The fastest way to see the whole loop, no setup required.</p>
+
+      <pre><code><span class="cmt"># no LangGraph, no credentials, nothing to configure</span>
+git clone &lt;repo&gt;
+cd approval-gate
+pip install -r requirements.txt
+python examples/plain_python_demo.py</code></pre>
+
+      <p>For your own code, the shape is always the same:</p>
+
+      <pre><code><span class="key">from</span> approval_gate <span class="key">import</span> ApprovalGate
+
+gate = ApprovalGate(db_path=<span class="str">"audit.db"</span>)  <span class="cmt"># defaults to LangGraphBackend</span>
+
+<span class="key">def</span> send_email(to, subject, body):
+    decision = gate.request_approval(
+        action_name=<span class="str">"send_email"</span>,
+        args={<span class="str">"to"</span>: to, <span class="str">"subject"</span>: subject, <span class="str">"body"</span>: body},
+        risk=<span class="str">"medium"</span>,
+    )
+    <span class="key">if not</span> decision.approved:
+        <span class="key">return</span> <span class="str">f"BLOCKED: {decision.reason}"</span>
+
+    result = really_send_email(**decision.args)  <span class="cmt"># reflects any edits</span>
+    gate.log_result(decision.audit_id, result)
+    <span class="key">return</span> result</code></pre>
+
+      <div class="callout">
+        <div class="callout-title">Not using LangGraph?</div>
+        Pass <code>backend=</code> &mdash; see any page under <strong>Channels</strong> in the sidebar.
+        Everything else about this snippet stays identical.
+      </div>
+
+      <h2>Install</h2>
+      <pre><code>pip install approval-gate
+<span class="cmt"># only if you're using LangGraphBackend:</span>
+pip install <span class="str">"approval-gate[langgraph]"</span>
+<span class="cmt"># optional, richer PII detection:</span>
+pip install presidio-analyzer
+python -m spacy download en_core_web_sm</code></pre>
+      <p>
+        The core package (<code>ApprovalGate</code>, the audit log, PII scanning, <code>BlockingBackend</code>) has
+        <strong>no required dependencies</strong>. <code>EmailBackend</code>, <code>SlackBackend</code>, and
+        <code>WebhookBackend</code> use only the Python standard library &mdash; nothing extra to install for those.
+      </p>
+    </div>
+
+    <!-- ===================== CHANNEL: WEB ===================== -->
+    <div class="page" id="page-ch-web">
+      <div class="eyebrow">Channel &middot; <span class="badge neutral">WebBackend</span></div>
+      <h1>Browser</h1>
+      <p class="lede">
+        A real review inbox in a browser tab. The only channel where a reviewer can edit proposed arguments
+        before approving, and the only one built for several pending items at once.
+      </p>
+
+      <div class="callout">
+        <div class="callout-title">Best for</div>
+        Active development, a team watching a dashboard, or whenever in-place editing of arguments matters.
+      </div>
+
+      <pre><code><span class="key">from</span> approval_gate <span class="key">import</span> ApprovalGate
+<span class="key">from</span> approval_gate.backends <span class="key">import</span> WebBackend
+
+backend = WebBackend(port=8642)
+gate = ApprovalGate(db_path=<span class="str">"audit.db"</span>, backend=backend)
+<span class="key">print</span>(<span class="str">f"Review inbox running at {backend.url}"</span>)
+<span class="cmt"># ... call gate.request_approval(...) as usual, from any thread ...</span>
+backend.shutdown()</code></pre>
+
+      <p>
+        Open <code>backend.url</code>. Pending actions appear as rows in a tabular list &mdash; click one to
+        expand it inline, edit any field, and Approve / Approve&nbsp;with&nbsp;edits / Reject. Every other pending
+        item stays collapsed, same interaction model as a mail client.
+      </p>
+
+      <h2>Endpoints</h2>
+      <table>
+        <tr><th>Method &amp; path</th><th>Purpose</th></tr>
+        <tr><td><code>GET /</code></td><td>The inbox page itself</td></tr>
+        <tr><td><code>GET /api/pending</code></td><td>JSON list of everything currently waiting</td></tr>
+        <tr><td><code>POST /api/decide</code></td><td><code>{audit_id, decision, by, reason, args}</code> &rarr; resolves it</td></tr>
+      </table>
+
+      <p>Try it: <code>python examples/web_inbox_demo.py</code></p>
+    </div>
+
+    <!-- ===================== CHANNEL: WEBHOOK ===================== -->
+    <div class="page" id="page-ch-webhook">
+      <div class="eyebrow">Channel &middot; <span class="badge neutral">WebhookBackend</span></div>
+      <h1>Bring your own system</h1>
+      <p class="lede">
+        POSTs the pending action to a URL you configure; your system POSTs the decision back. For teams with
+        their own ticket queue or admin panel who don't want to adopt Slack or email specifically for this.
+      </p>
+
+      <pre><code><span class="key">from</span> approval_gate.backends <span class="key">import</span> WebhookBackend
+
+backend = WebhookBackend(
+    notify_url=<span class="str">"https://internal-tools.example.com/incoming"</span>,
+    host=<span class="str">"127.0.0.1"</span>, port=8643,
+)
+gate = ApprovalGate(db_path=<span class="str">"audit.db"</span>, backend=backend)</code></pre>
+
+      <p>
+        Every pending action is POSTed as JSON with a <code>callback_url</code> field included. Your system
+        decides however it wants, then calls that URL back:
+      </p>
+
+      <pre><code>curl -X POST <span class="str">"$callback_url"</span> -H <span class="str">"Content-Type: application/json"</span> -d <span class="str">'{
+  "audit_id": "...", "decision": "approve", "by": "your-system", "reason": ""
+}'</span></code></pre>
+
+      <table>
+        <tr><th>Method &amp; path</th><th>Purpose</th></tr>
+        <tr><td><code>GET /pending</code></td><td>Poll instead of relying on the initial POST</td></tr>
+        <tr><td><code>POST /decide</code></td><td>Your system delivers the decision here</td></tr>
+      </table>
+
+      <p>Try it: <code>python examples/webhook_demo.py</code></p>
+    </div>
+
+    <!-- ===================== CHANNEL: EMAIL ===================== -->
+    <div class="page" id="page-ch-email">
+      <div class="eyebrow">Channel &middot; <span class="badge neutral">EmailBackend</span></div>
+      <h1>Email</h1>
+      <p class="lede">
+        Signed one-click approve/reject links. No login, no browser tab that has to stay open &mdash; the email
+        just sits in an inbox until someone acts on it.
+      </p>
+
+      <pre><code><span class="key">from</span> approval_gate.backends <span class="key">import</span> EmailBackend
+
+backend = EmailBackend(
+    smtp_host=<span class="str">"smtp.example.com"</span>, smtp_port=587,
+    smtp_user=<span class="str">"bot@example.com"</span>, smtp_password=<span class="str">"..."</span>,
+    from_addr=<span class="str">"approval-gate@example.com"</span>, to_addr=<span class="str">"reviewer@example.com"</span>,
+    secret=<span class="str">"a-random-string-you-generate-once"</span>,
+    public_base_url=<span class="str">"https://approvals.example.com"</span>,
+)
+gate = ApprovalGate(db_path=<span class="str">"audit.db"</span>, backend=backend)</code></pre>
+
+      <p>
+        Clicking a link opens a confirmation page (so a mail scanner pre-fetching the link can't silently
+        decide on the recipient's behalf); confirming resolves it. Links are HMAC-SHA256 signed so one can't be
+        edited into approving a different action.
+      </p>
+
+      <div class="callout warn">
+        <div class="callout-title">Does not prove the clicker is the recipient</div>
+        The signature stops tampering, not link-sharing &mdash; anyone with the link (forwarded, leaked from mail
+        logs) can use it. Use <a onclick="showPage('ch-web')">WebBackend</a> or
+        <a onclick="showPage('ch-slack')">SlackBackend</a> if that tradeoff isn't acceptable.
+      </div>
+
+      <h2>Two things to get right</h2>
+      <ul>
+        <li><strong>secret</strong> &mdash; generate one random string once and keep it stable. Rotating it invalidates every link already sent.</li>
+        <li><strong>public_base_url</strong> &mdash; must be reachable by the reviewer's <em>browser</em>, not <code>localhost</code> unless they're on the same machine.</li>
+      </ul>
+
+      <p><code>args</code> cannot be edited from an email link &mdash; only approve/reject.</p>
+      <p>Try it: <code>python examples/email_demo.py</code> (uses a local fake SMTP server, no real mail account needed)</p>
+    </div>
+
+    <!-- ===================== CHANNEL: SLACK ===================== -->
+    <div class="page" id="page-ch-slack">
+      <div class="eyebrow">Channel &middot; <span class="badge neutral">SlackBackend</span></div>
+      <h1>Slack</h1>
+      <p class="lede">
+        Interactive Approve/Reject buttons right in a Slack message, resolved without leaving Slack. Different
+        (and more capable) than <code>SlackNotifier</code>, which only sends a link elsewhere &mdash; this
+        backend receives the click back and resolves the decision itself.
+      </p>
+
+      <h2>One-time Slack app setup</h2>
+      <ol>
+        <li>Bot token with <code>chat:write</code> scope; invite it to the target channel.</li>
+        <li>Enable Interactivity; set the Request URL to wherever this listener is reachable <em>from Slack's servers</em> &mdash; a tunnel like ngrok in development, real ingress in production.</li>
+        <li>Copy the bot token (<code>xoxb-...</code>) and the app's Signing Secret.</li>
+      </ol>
+
+      <pre><code><span class="key">from</span> approval_gate.backends <span class="key">import</span> SlackBackend
+
+backend = SlackBackend(
+    bot_token=<span class="str">"xoxb-..."</span>,
+    signing_secret=<span class="str">"..."</span>,
+    channel=<span class="str">"#approvals"</span>,
+    host=<span class="str">"0.0.0.0"</span>, port=8645,
+)
+gate = ApprovalGate(db_path=<span class="str">"audit.db"</span>, backend=backend)</code></pre>
+
+      <figure class="figure">
+        <svg viewBox="0 0 780 190" role="img" aria-label="Every Slack interaction request is verified against an HMAC-SHA256 signature computed from the app signing secret, the request timestamp, and the raw body, before any part of the payload is trusted.">
+          <defs>
+            <marker id="arrow3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+            </marker>
+          </defs>
+          <g fill="none" stroke="currentColor" stroke-width="1.5" font-family="ui-monospace, monospace" font-size="12">
+            <rect x="20" y="65" width="160" height="55" rx="8"/>
+            <text x="100" y="88" text-anchor="middle" stroke="none" fill="currentColor" font-weight="600">button clicked</text>
+            <text x="100" y="103" text-anchor="middle" stroke="none" fill="currentColor" font-size="10" opacity="0.7">in Slack</text>
+
+            <line x1="180" y1="92" x2="218" y2="92" marker-end="url(#arrow3)"/>
+            <text x="199" y="82" text-anchor="middle" stroke="none" fill="currentColor" font-size="10">POST</text>
+
+            <rect x="220" y="55" width="220" height="75" rx="8"/>
+            <text x="330" y="80" text-anchor="middle" stroke="none" fill="currentColor" font-weight="700">verify signature</text>
+            <text x="330" y="96" text-anchor="middle" stroke="none" fill="currentColor" font-size="10" opacity="0.75">HMAC(secret, v0:ts:body)</text>
+            <text x="330" y="111" text-anchor="middle" stroke="none" fill="currentColor" font-size="10" opacity="0.75">+ reject if &gt;5min old</text>
+
+            <line x1="440" y1="92" x2="478" y2="92" marker-end="url(#arrow3)"/>
+
+            <polygon points="540,55 610,92 540,130 470,92"/>
+            <text x="540" y="88" text-anchor="middle" stroke="none" fill="currentColor" font-size="11">valid?</text>
+
+            <line x1="610" y1="92" x2="648" y2="92" marker-end="url(#arrow3)"/>
+            <text x="629" y="82" text-anchor="middle" stroke="none" fill="currentColor" font-size="10">yes</text>
+            <rect x="650" y="65" width="110" height="55" rx="8"/>
+            <text x="705" y="88" text-anchor="middle" stroke="none" fill="currentColor" font-weight="600">resolve()</text>
+            <text x="705" y="103" text-anchor="middle" stroke="none" fill="currentColor" font-size="10" opacity="0.7">decision applied</text>
+
+            <line x1="540" y1="130" x2="540" y2="165" marker-end="url(#arrow3)"/>
+            <text x="552" y="152" stroke="none" fill="currentColor" font-size="10">no</text>
+            <text x="540" y="182" text-anchor="middle" stroke="none" fill="currentColor" font-size="11">400, payload never parsed</text>
+          </g>
+        </svg>
+        <figcaption>
+          Every field in the payload &mdash; including which action to approve &mdash; is untrusted until the
+          signature check passes. This is the one listener across all four async channels where a forged request
+          could resolve an arbitrary pending action if left unverified.
+        </figcaption>
+      </figure>
+
+      <p><code>args</code> aren't editable from Slack, same tradeoff as email.</p>
+      <p>Try it: <code>python examples/slack_demo.py</code> (fakes the outbound post; the inbound signed interaction is real)</p>
+    </div>
+
+    <!-- ===================== CHANNEL: LANGGRAPH ===================== -->
+    <div class="page" id="page-ch-langgraph">
+      <div class="eyebrow">Channel &middot; <span class="badge neutral">LangGraphBackend</span> <span class="badge low">default</span></div>
+      <h1>LangGraph</h1>
+      <p class="lede">
+        The default backend &mdash; if you don't pass <code>backend=</code>, this is what you get. Use it if
+        your agent is a LangGraph graph already driven by <code>interrupt()</code> / <code>Command(resume=...)</code>.
+      </p>
+
+      <pre><code><span class="key">from</span> langgraph.types <span class="key">import</span> Command
+
+result = graph.invoke(initial_state, config)
+<span class="key">while</span> <span class="str">"__interrupt__"</span> <span class="key">in</span> result:
+    pending = result[<span class="str">"__interrupt__"</span>][0].value
+    decision = ask_a_human_somehow(pending)
+    result = graph.invoke(Command(resume=decision), config)</code></pre>
+
+      <p>
+        <code>approval_gate.cli.run_with_cli_approval(graph, initial_state, config)</code> wraps this loop with a
+        terminal prompt if you just want something working immediately.
+      </p>
+
+      <div class="callout warn">
+        <div class="callout-title">Resume-replay</div>
+        When a node calling <code>interrupt()</code> is resumed, LangGraph re-runs that node function from the
+        top &mdash; any code before the <code>interrupt()</code> call runs again. <code>ApprovalGate</code>
+        handles this automatically via deterministic audit-row IDs and an upsert &mdash; see
+        <a onclick="showPage('cmp-audit')">Audit log</a>.
+      </div>
+
+      <p>Try it: <code>python examples/email_agent_demo.py</code></p>
+    </div>
+
+    <!-- ===================== CHANNEL: BLOCKING ===================== -->
+    <div class="page" id="page-ch-blocking">
+      <div class="eyebrow">Channel &middot; <span class="badge neutral">BlockingBackend</span></div>
+      <h1>Plain Python callback</h1>
+      <p class="lede">
+        A script, a notebook, a raw tool-calling loop &mdash; anywhere with no framework and no need for
+        anything async.
+      </p>
+
+      <pre><code><span class="key">from</span> approval_gate.backends <span class="key">import</span> BlockingBackend
+
+<span class="key">def</span> ask_a_human(pending):
+    <span class="key">print</span>(pending[<span class="str">"action"</span>], pending[<span class="str">"args"</span>])
+    choice = <span class="key">input</span>(<span class="str">"approve/reject? "</span>)
+    <span class="key">return</span> {<span class="str">"decision"</span>: <span class="str">"approve"</span> <span class="key">if</span> choice == <span class="str">"approve"</span> <span class="key">else</span> <span class="str">"reject"</span>, <span class="str">"by"</span>: <span class="str">"amit"</span>}
+
+gate = ApprovalGate(db_path=<span class="str">"audit.db"</span>, backend=BlockingBackend(ask_a_human))</code></pre>
+
+      <p>
+        <code>reviewer</code> runs synchronously right there in the calling thread &mdash; no pause/resume
+        plumbing, no server. This is also the simplest reference implementation to read if you're building a
+        new <code>Backend</code> yourself.
+      </p>
+
+      <p>Try it: <code>python examples/plain_python_demo.py</code></p>
+    </div>
+
+    <!-- ===================== COMPONENT: CORE ===================== -->
+    <div class="page" id="page-cmp-core">
+      <div class="eyebrow">Component</div>
+      <h1>ApprovalGate</h1>
+      <p class="lede"><code>approval_gate/core.py</code> &mdash; the object you call. Orchestrates everything else; owns no policy or channel logic of its own.</p>
+
+      <pre><code>ApprovalGate(
+    db_path: str = <span class="str">"audit.db"</span>,
+    default_thread_id: str = <span class="str">"default"</span>,
+    backend: Backend | <span class="key">None</span> = <span class="key">None</span>,   <span class="cmt"># defaults to LangGraphBackend</span>
+    policy: Policy | <span class="key">None</span> = <span class="key">None</span>,
+)</code></pre>
+
+      <h2>request_approval</h2>
+      <pre><code>gate.request_approval(
+    action_name: str,        <span class="cmt"># e.g. "send_email" -- shown to reviewers, matched by Rule</span>
+    args: dict,                <span class="cmt"># scanned for PII, editable by some backends</span>
+    risk: str = <span class="str">"high"</span>,      <span class="cmt"># "low" | "medium" | "high" -- your label</span>
+    thread_id: str | <span class="key">None</span> = <span class="key">None</span>,
+) -&gt; Decision</code></pre>
+
+      <p>What it does, in order:</p>
+      <ol>
+        <li>Scans <code>args</code> for PII/secrets via <code>pii.scan()</code></li>
+        <li>Writes a <code>pending</code> row to the audit log (<code>upsert_pending</code>)</li>
+        <li>If a <code>policy</code> is set, gives it first look &mdash; may short-circuit here</li>
+        <li>Otherwise blocks on <code>backend.wait_for_decision(pending)</code></li>
+        <li>Writes the final decision (<code>record_decision</code>) regardless of which path was taken</li>
+        <li>Returns a <code>Decision</code></li>
+      </ol>
+
+      <h2>Decision</h2>
+      <pre><code>Decision(
+    approved: bool,    <span class="cmt"># True for "approve" or "edit"</span>
+    args: dict,          <span class="cmt"># final args -- reflects edits if the reviewer changed anything</span>
+    reason: str,          <span class="cmt"># only set when rejected</span>
+    audit_id: str,          <span class="cmt"># pass to gate.log_result(...) after acting on it</span>
+)</code></pre>
+
+      <p>
+        After acting on an approved decision, call <code>gate.log_result(decision.audit_id, result, error=False)</code>
+        &mdash; a separate step, because the result usually isn't known until after the action actually runs.
+      </p>
+    </div>
+
+    <!-- ===================== COMPONENT: AUDIT ===================== -->
+    <div class="page" id="page-cmp-audit">
+      <div class="eyebrow">Component</div>
+      <h1>Audit log</h1>
+      <p class="lede">
+        <code>approval_gate/audit.py</code> &mdash; a permanent, append-only SQLite record. Rows are never
+        deleted, including rejected or errored actions.
+      </p>
+
+      <h2>Deterministic IDs</h2>
+      <p>
+        Rows are keyed by <code>hash(thread_id, action_name, args)</code>, not an autoincrement or random UUID.
+        This exists specifically for LangGraph: when a node calling <code>interrupt()</code> is resumed,
+        LangGraph re-runs that node function from the top, so "create a pending audit row" runs again on every
+        resume. A deterministic ID + <code>UPSERT</code> makes that replay harmless &mdash; it overwrites the
+        same row instead of creating a duplicate.
+      </p>
+
+      <div class="callout warn">
+        <div class="callout-title">A real bug this shape prevented recurring</div>
+        Concurrent writes from multiple threads (an agent doing parallel tool calls) to one shared
+        <code>sqlite3.Connection</code> without a lock don't just error &mdash; they can corrupt the database file
+        on disk. Every public method on <code>AuditLog</code> takes a <code>threading.RLock</code> for its full
+        duration. This was a real, found-in-development bug, not a hypothetical &mdash; see the git history around
+        this file for the incident.
+      </div>
+
+      <h2>Multi-process safety</h2>
+      <p>
+        The connection is opened with <code>PRAGMA journal_mode=WAL</code> and a 5s <code>busy_timeout</code>,
+        which is separate from the thread-safety lock above: it's what lets more than one <em>OS process</em> on
+        the same machine write to the same <code>db_path</code> concurrently without one writer blocking every
+        reader, or a brief lock conflict raising <code>database is locked</code> immediately instead of retrying.
+      </p>
+      <div class="callout">
+        <div class="callout-title">Not a distributed database</div>
+        WAL mode is a single-machine, single-filesystem mechanism. It covers "a couple of worker processes on one
+        box," not a horizontally-scaled deployment across multiple machines &mdash; see
+        <code>SECURITY.md</code> in the repo for the real ceiling.
+      </div>
+
+      <h2>Reading it back</h2>
+      <pre><code><span class="key">from</span> approval_gate <span class="key">import</span> AuditLog
+
+log = AuditLog(<span class="str">"audit.db"</span>)
+<span class="key">for</span> record <span class="key">in</span> log.list_all():
+    <span class="key">print</span>(record.action_name, record.status, record.decided_by)</code></pre>
+
+      <table>
+        <tr><th>field</th><th>meaning</th></tr>
+        <tr><td><code>status</code></td><td><code>pending</code> / <code>approved</code> / <code>rejected</code> / <code>edited</code> / <code>error</code></td></tr>
+        <tr><td><code>decided_by</code></td><td>reviewer identity, or <code>policy:&lt;rule-name&gt;</code> for auto-decisions</td></tr>
+        <tr><td><code>final_args</code></td><td>only set if the reviewer edited the proposed args</td></tr>
+        <tr><td><code>pii_findings</code></td><td>masked, never the raw sensitive value</td></tr>
+      </table>
+
+      <p><code>list_pending()</code> returns only undecided rows &mdash; useful for a "what's stuck" check.</p>
+    </div>
+
+    <!-- ===================== COMPONENT: PII ===================== -->
+    <div class="page" id="page-cmp-pii">
+      <div class="eyebrow">Component</div>
+      <h1>PII / secret scanning</h1>
+      <p class="lede">
+        <code>approval_gate/pii.py</code> &mdash; every string-valued field in <code>args</code> is scanned
+        before it's shown to a reviewer or written to the log.
+      </p>
+
+      <div class="card-grid">
+        <div class="card">
+          <h4>Always on</h4>
+          <p>Regex: emails, phone numbers, Luhn-validated card numbers, SSN-shaped numbers, and API-key-shaped strings (OpenAI, AWS, GitHub, Slack, Google patterns).</p>
+        </div>
+        <div class="card">
+          <h4>Optional</h4>
+          <p>If <code>presidio-analyzer</code> is installed, adds NLP-based name/location/organization detection.</p>
+        </div>
+      </div>
+
+      <p>
+        Card numbers are Luhn-checked, so a 16-digit order number like <code>1234 5678 9012 3456</code> is
+        <em>not</em> flagged &mdash; only numbers that actually pass the checksum real card numbers use.
+      </p>
+
+      <h2>Masking</h2>
+      <p>
+        Findings are masked before they're shown or logged &mdash; <code>pr***...om</code>, never the raw value,
+        even in your own audit database. <code>pii.using_presidio()</code> confirms which mode is active.
+      </p>
+
+      <table>
+        <tr><th>type</th><th>example finding</th></tr>
+        <tr><td><code>email</code></td><td><code>pr***************om</code></td></tr>
+        <tr><td><code>card_number</code></td><td><code>4242********4242</code></td></tr>
+        <tr><td><code>api_secret</code></td><td><code>sk-***...***aaa</code></td></tr>
+        <tr><td><code>phone</code></td><td><code>+9***********10</code></td></tr>
+        <tr><td><code>ssn_like</code></td><td><code>12***-***89</code></td></tr>
+      </table>
+    </div>
+
+    <!-- ===================== COMPONENT: POLICY ===================== -->
+    <div class="page" id="page-cmp-policy">
+      <div class="eyebrow">Component</div>
+      <h1>Policies</h1>
+      <p class="lede">
+        <code>approval_gate/policy.py</code> &mdash; pausing for a human on <em>every</em> call doesn't scale.
+        Past a handful of action types, reviewers start rubber-stamping everything, which defeats the point.
+      </p>
+
+      <pre><code><span class="key">from</span> approval_gate.policy <span class="key">import</span> Rule, RulePolicy
+
+policy = RulePolicy([
+    Rule(risk=<span class="str">"low"</span>, has_pii=<span class="key">False</span>, auto_approve=<span class="key">True</span>, name=<span class="str">"auto-low-risk"</span>),
+    Rule(action_prefix=<span class="str">"delete_"</span>, route_to=<span class="str">"oncall-reviewer"</span>),
+    Rule(action_name=<span class="str">"wire_transfer"</span>, auto_reject=<span class="key">True</span>, name=<span class="str">"block-wire-transfers"</span>),
+])
+gate = ApprovalGate(db_path=<span class="str">"audit.db"</span>, policy=policy)</code></pre>
+
+      <p>Rules are evaluated <strong>in order</strong>, first match wins.</p>
+
+      <table>
+        <tr><th>field</th><th>matches on</th></tr>
+        <tr><td><code>action_name</code></td><td>exact action name</td></tr>
+        <tr><td><code>action_prefix</code></td><td>action name starting with this string</td></tr>
+        <tr><td><code>risk</code></td><td>the <code>risk=</code> passed to <code>request_approval</code></td></tr>
+        <tr><td><code>has_pii</code></td><td>whether any PII/secret findings were detected</td></tr>
+      </table>
+
+      <h2>What a matching rule does</h2>
+      <table>
+        <tr><th>effect</th><th>behavior</th></tr>
+        <tr>
+          <td><code>auto_approve</code></td>
+          <td>Decided instantly. <code>decided_by</code> = <code>policy:&lt;rule-name&gt;</code>. Nothing shows up in any review channel, no notifier fires. Still fully logged.</td>
+        </tr>
+        <tr>
+          <td><code>auto_reject</code></td>
+          <td>Same, but rejected &mdash; for actions that should never run unattended.</td>
+        </tr>
+        <tr>
+          <td><code>route_to</code></td>
+          <td>Does <strong>not</strong> auto-decide. Still goes to a human; tags the pending payload so the backend/notifier can direct it.</td>
+        </tr>
+      </table>
+
+      <p>
+        Nothing matches, or no <code>policy=</code> at all &rarr; every action goes to a human. The safe default.
+      </p>
+
+      <div class="callout">
+        <div class="callout-title">Policies must be pure</div>
+        Like everything before a pause, a policy can re-run on a LangGraph resume-replay &mdash; no side effects.
+      </div>
+    </div>
+
+    <!-- ===================== COMPONENT: NOTIFIERS ===================== -->
+    <div class="page" id="page-cmp-notifiers">
+      <div class="eyebrow">Component</div>
+      <h1>Notifiers</h1>
+      <p class="lede">
+        <code>approval_gate/notifiers.py</code> &mdash; a pending action sitting in a browser tab nobody has
+        open doesn't help. <code>notifier=</code> on <code>WebBackend</code> fires the moment something's queued.
+      </p>
+
+      <pre><code><span class="key">from</span> approval_gate.backends <span class="key">import</span> WebBackend
+<span class="key">from</span> approval_gate.notifiers <span class="key">import</span> SlackNotifier
+
+backend = WebBackend(
+    port=8642,
+    notifier=SlackNotifier(webhook_url=<span class="str">"https://hooks.slack.com/services/..."</span>),
+)</code></pre>
+
+      <div class="callout">
+        <div class="callout-title">Notifier vs. SlackBackend</div>
+        <code>SlackNotifier</code> posts to a Slack <em>incoming webhook</em> &mdash; one-way, it can only send a
+        link elsewhere. <a onclick="showPage('ch-slack')">SlackBackend</a> is two-way and resolves the decision
+        itself, inside Slack. Use a notifier for a <em>ping</em> into some other review surface; use
+        SlackBackend when you want the decision to happen in Slack directly.
+      </div>
+
+      <p>Write your own &mdash; it's just a function:</p>
+      <pre><code><span class="key">def</span> my_notifier(pending: dict, review_url: str) -&gt; <span class="key">None</span>:
+    my_paging_system.send(<span class="str">f"{pending['action']} needs review: {review_url}"</span>)
+
+backend = WebBackend(port=8642, notifier=my_notifier)</code></pre>
+
+      <p>
+        A broken notifier (webhook down, bad credentials) is caught and logged, never allowed to block the
+        approval flow &mdash; the pending action just sits there waiting, same as if there were no notifier at all.
+      </p>
+
+      <p>Try it: <code>python examples/notifier_demo.py</code></p>
+    </div>
+
+    <!-- ===================== REFERENCE: API ===================== -->
+    <div class="page" id="page-ref-api">
+      <div class="eyebrow">Reference</div>
+      <h1>API reference</h1>
+      <p class="lede">The public surface, grouped by module.</p>
+
+      <h2>approval_gate</h2>
+      <div class="kv">
+        <dt>ApprovalGate</dt><dd>the main entry point &mdash; see <a onclick="showPage('cmp-core')">ApprovalGate</a></dd>
+        <dt>Decision</dt><dd>returned by <code>request_approval()</code></dd>
+        <dt>AuditLog, AuditRecord</dt><dd>see <a onclick="showPage('cmp-audit')">Audit log</a></dd>
+        <dt>pii</dt><dd>module &mdash; <code>pii.scan(args)</code>, <code>pii.using_presidio()</code></dd>
+        <dt>Policy, RulePolicy, Rule</dt><dd>see <a onclick="showPage('cmp-policy')">Policies</a></dd>
+        <dt>backends</dt><dd>submodule &mdash; every <code>Backend</code> implementation</dd>
+        <dt>notifiers</dt><dd>submodule &mdash; <code>Notifier</code>, <code>SlackNotifier</code></dd>
+      </div>
+
+      <h2>approval_gate.backends</h2>
+      <div class="kv">
+        <dt>Backend</dt><dd>the one-method contract &mdash; <code>wait_for_decision(pending) -&gt; dict</code></dd>
+        <dt>LangGraphBackend</dt><dd>default; pauses via <code>interrupt()</code></dd>
+        <dt>BlockingBackend(reviewer)</dt><dd>synchronous callback, no async plumbing</dd>
+        <dt>WebBackend(host, port, notifier)</dt><dd>browser inbox</dd>
+        <dt>WebhookBackend(notify_url, host, port, timeout)</dt><dd>bring-your-own-system</dd>
+        <dt>EmailBackend(smtp_host, smtp_port, ...)</dt><dd>signed email links</dd>
+        <dt>SlackBackend(bot_token, signing_secret, channel, ...)</dt><dd>interactive Slack buttons</dd>
+      </div>
+
+      <h2>Building a new channel</h2>
+      <p>
+        Any backend where the decision arrives asynchronously can inherit
+        <code>_PendingQueueBackend</code> (<code>approval_gate/backends/_queue_base.py</code>) instead of
+        re-solving "block a thread, resolve it from an HTTP handler" from scratch &mdash; see
+        <code>BACKEND_TEMPLATE.md</code> in the repo for the full contribution checklist.
+      </p>
+    </div>
+
+    <!-- ===================== REFERENCE: TROUBLESHOOTING ===================== -->
+    <div class="page" id="page-ref-troubleshoot">
+      <div class="eyebrow">Reference</div>
+      <h1>Troubleshooting</h1>
+
+      <h3>ModuleNotFoundError: No module named 'langgraph'</h3>
+      <p>
+        You're using the default backend without installing the extra. Either
+        <code>pip install "approval-gate[langgraph]"</code>, or pass a different <code>backend=</code> if you're
+        not actually using LangGraph.
+      </p>
+
+      <h3>A Slack/email/webhook backend never resolves &mdash; request_approval just hangs</h3>
+      <p>There is no timeout by design. Check:</p>
+      <ul>
+        <li>Is the listener actually reachable from wherever the click/callback is coming from? (<code>localhost</code> isn't reachable from Slack's servers or a real mail client.)</li>
+        <li>For SlackBackend: does the Request URL in your Slack app config actually point at this process?</li>
+        <li><code>GET {backend.url}/pending</code> (every async backend exposes this) shows what's currently stuck waiting.</li>
+      </ul>
+
+      <h3>"Invalid or tampered link" / "invalid Slack signature"</h3>
+      <p>
+        The <code>secret</code> / <code>signing_secret</code> used to verify doesn't match what signed the
+        request. For email, this happens if <code>secret</code> changed since the email was sent &mdash; links
+        don't survive a secret rotation. For Slack, confirm you copied the <em>Signing Secret</em>, not the bot
+        token.
+      </p>
+
+      <h3>Two reviewers click at the same time / a link gets clicked twice</h3>
+      <p>
+        The second one gets a 404 (webhook/email) or a friendly "already decided" response (Slack) &mdash;
+        whichever decision arrives first at the backend wins; the audit log records that one.
+      </p>
+
+      <h3>Duplicate rows in the audit log after a LangGraph resume</h3>
+      <p>
+        Shouldn't happen &mdash; rows are keyed by a deterministic hash specifically so a resume-replay upserts
+        instead of duplicating. If you're seeing duplicates, check that <code>thread_id</code> is stable across
+        the resume.
+      </p>
+
+      <h3>Concurrent request_approval() calls from multiple threads</h3>
+      <p>
+        Supported and tested &mdash; <code>AuditLog</code> locks around every access specifically to make this
+        safe. If you're doing parallel tool calls from an agent, this is fine.
+      </p>
+
+      <h3>Deploying Email / Slack / Webhook somewhere real</h3>
+      <p>
+        These backends' HTTP listeners are stdlib <code>http.server</code>, which isn't hardened for
+        internet-facing traffic on its own &mdash; put a real reverse proxy in front for TLS and basic abuse
+        protection. See <code>SECURITY.md</code> in the repo for secrets handling and the full guidance.
+      </p>
+    </div>
+
+  </main>
+</div>
+
+<script>
+function setTheme(mode) {
+  const root = document.documentElement;
+  if (mode === "light") root.setAttribute("data-theme", "light");
+  else if (mode === "dark") root.setAttribute("data-theme", "dark");
+  else root.removeAttribute("data-theme");
+  document.querySelectorAll(".theme-toggle button").forEach(b => b.classList.remove("active"));
+  document.getElementById("theme-" + mode).classList.add("active");
+  localStorage.setItem("approval-gate-docs-theme", mode);
+}
+(function () {
+  const saved = localStorage.getItem("approval-gate-docs-theme") || "system";
+  setTheme(saved);
+})();
+
+function showPage(id) {
+  document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+  document.querySelectorAll(".nav-link").forEach(l => l.classList.remove("active"));
+  const page = document.getElementById("page-" + id);
+  const link = document.querySelector(`.nav-link[data-page="${id}"]`);
+  if (page) page.classList.add("active");
+  if (link) link.classList.add("active");
+  window.scrollTo(0, 0);
+  history.replaceState(null, "", "#" + id);
+}
+
+document.querySelectorAll(".nav-link").forEach(link => {
+  link.addEventListener("click", () => showPage(link.dataset.page));
+});
+
+window.addEventListener("DOMContentLoaded", () => {
+  const initial = (location.hash || "#overview").slice(1);
+  showPage(document.getElementById("page-" + initial) ? initial : "overview");
+});
+</script>

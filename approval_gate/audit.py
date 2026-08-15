@@ -121,6 +121,25 @@ class AuditLog:
         self._lock = threading.RLock()
         self._conn = sqlite3.connect(self.db_path, check_same_thread=False)
         self._conn.row_factory = sqlite3.Row
+
+        # WAL mode lets multiple *processes* (not just threads in this one
+        # process -- the lock above only covers those) read and write the
+        # same db_path concurrently without one writer blocking every
+        # reader. This matters if you're running more than one instance of
+        # your app against the same audit.db (e.g. a couple of worker
+        # processes on one machine). busy_timeout makes a writer that loses
+        # a brief race retry for up to 5s instead of raising
+        # "database is locked" immediately -- SQLite's own recommended
+        # pattern for this, not something WAL mode gives you for free.
+        #
+        # What this does NOT give you: horizontally-scaled deployments
+        # across multiple machines. WAL mode is a single-machine,
+        # single-filesystem mechanism. For that, point multiple
+        # ApprovalGate instances at a shared database server instead of a
+        # local file -- not built here; see the roadmap.
+        self._conn.execute("PRAGMA journal_mode=WAL")
+        self._conn.execute("PRAGMA busy_timeout=5000")
+
         self._conn.execute(SCHEMA)
         self._conn.commit()
 
