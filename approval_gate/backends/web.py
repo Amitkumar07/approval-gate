@@ -766,28 +766,71 @@ async function refresh() {
     expandedId = null; // the expanded item was just decided elsewhere
   }
 
-  const rejectOpenIds = new Set(
-    Array.from(root.querySelectorAll(".reject-panel.open")).map((el) => el.dataset.auditId)
-  );
-
-  const list = document.createElement("div");
-  list.className = "list";
-
-  const head = document.createElement("div");
-  head.className = "list-head";
-  head.innerHTML = "<span></span><span>Action</span><span>Findings</span><span>Waiting</span><span>Risk</span>";
-  list.appendChild(head);
+  // The 2s poll used to blow away root.innerHTML and rebuild every row on
+  // every tick. Beyond wiping in-progress input (a real bug hit while
+  // dogfooding this), replacing focused/expanded DOM out from under a
+  // reviewer also causes a visible flicker even once the *data* survives
+  // -- the browser has to re-paint, and any focus/cursor position is
+  // lost even if the text value is restored. Fixed properly: reconcile
+  // against the existing DOM instead of rebuilding it. The expanded row
+  // (where a reviewer might be mid-interaction) is never touched by a
+  // poll at all; everything else -- add, remove, reorder, and the
+  // read-only bits of collapsed rows (waiting time, findings count) --
+  // still updates live.
+  let list = root.querySelector(".list");
+  if (!list) {
+    root.innerHTML = "";
+    list = document.createElement("div");
+    list.className = "list";
+    const head = document.createElement("div");
+    head.className = "list-head";
+    head.innerHTML = "<span></span><span>Action</span><span>Findings</span><span>Waiting</span><span>Risk</span>";
+    list.appendChild(head);
+    root.appendChild(list);
+  }
 
   const nextIds = new Set(items.map((it) => it.audit_id));
-  for (const item of items) {
-    const wrap = renderRow(item, item.audit_id === expandedId, rejectOpenIds.has(item.audit_id));
-    if (!knownIds.has(item.audit_id)) wrap.classList.add("row-enter");
-    list.appendChild(wrap);
-  }
-  knownIds = nextIds;
 
-  root.innerHTML = "";
-  root.appendChild(list);
+  // remove rows that are no longer pending
+  for (const wrap of Array.from(list.querySelectorAll(".row-wrap"))) {
+    if (!nextIds.has(wrap.dataset.auditId)) wrap.remove();
+  }
+
+  for (const item of items) {
+    const existing = list.querySelector(`.row-wrap[data-audit-id="${item.audit_id}"]`);
+    const shouldBeExpanded = item.audit_id === expandedId;
+    const isAlreadyExpanded = existing && existing.classList.contains("expanded");
+
+    if (existing && shouldBeExpanded === isAlreadyExpanded) {
+      if (shouldBeExpanded) {
+        // Never touch a row the reviewer currently has open -- that's
+        // where typed input and cursor focus live.
+        continue;
+      }
+      patchRow(existing, item);
+      continue;
+    }
+
+    // Either brand new, or its expanded/collapsed state just changed
+    // (a click just happened) -- needs a real render either way.
+    const rejectOpen = existing ? existing.querySelector(".reject-panel.open") !== null : false;
+    const wrap = renderRow(item, shouldBeExpanded, rejectOpen);
+    if (!knownIds.has(item.audit_id)) wrap.classList.add("row-enter");
+    if (existing) existing.replaceWith(wrap);
+    else list.appendChild(wrap);
+  }
+
+  knownIds = nextIds;
+}
+
+function patchRow(wrap, item) {
+  // Updates only the parts of a collapsed row that can change between
+  // polls without touching anything a reviewer might be interacting
+  // with -- deliberately does not re-render args/findings/actions.
+  const waitingCell = wrap.querySelector(".row-waiting");
+  if (waitingCell && typeof item._first_seen === "number") {
+    waitingCell.textContent = timeAgo((Date.now() / 1000) - item._first_seen);
+  }
 }
 
 function renderRow(item, isExpanded, rejectOpen) {
@@ -878,6 +921,7 @@ function renderDetail(item, rejectOpen) {
   const fields = document.createElement("div");
   fields.className = "fields";
   const inputs = {};
+  let fieldIndex = 0;
   for (const [k, v] of Object.entries(item.args)) {
     const key = document.createElement("div");
     key.className = "field-key";
@@ -887,6 +931,7 @@ function renderDetail(item, rejectOpen) {
     const textarea = document.createElement("textarea");
     textarea.rows = String(v).length > 70 ? 3 : 1;
     textarea.value = v;
+    textarea.dataset.fieldIndex = String(fieldIndex++);
     inputs[k] = textarea;
     val.appendChild(textarea);
     fields.appendChild(key);
