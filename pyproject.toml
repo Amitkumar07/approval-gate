@@ -17,3 +17,6 @@ pii = ["presidio-analyzer>=2.2"]
 
 [tool.setuptools.packages.find]
 include = ["approval_gate*"]
+
+[tool.setuptools.package-data]
+"approval_gate" = ["py.typed"]

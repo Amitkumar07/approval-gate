@@ -1,0 +1,4 @@
+include README.md LICENSE USER_GUIDE.md SECURITY.md BACKEND_TEMPLATE.md CONTRIBUTING.md
+recursive-include examples *.py
+recursive-include approval_gate *.py
+include approval_gate/py.typed
